@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="grid">
+    <div class="card">
+        <span class="eyebrow">Detalle</span>
+        <h1>{{ title }}</h1>
+        <p class="subtitle">Cliente: <strong>{{ cliente }}</strong></p>
+        <p class="subtitle">Vehículo: <strong>{{ vehiculo }}</strong></p>
+        <p class="subtitle">Síntoma: {{ sintoma }}</p>
+        <div class="button-row">
+            <a class="btn primary" href="/api/diagnostico/analizar/{{ orden_id }}/">Ejecutar diagnóstico</a>
+            <a class="btn secondary" href="/api/distribucion/configurar/{{ orden_id }}/">Distribuir</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Estado</h2>
+        <p><span class="status warning">{{ riesgo }}</span></p>
+        <div class="result">
+            La orden requiere revisión técnica con prioridad media. Se recomienda validar cableado, sensores y sistema de combustible antes de continuar.
+        </div>
+    </div>
+</div>
+{% endblock %}

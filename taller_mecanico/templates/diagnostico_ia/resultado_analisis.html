@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <span class="eyebrow">Resultado</span>
+    <h1>{{ title }}</h1>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Causa probable</th>
+                <th>Probabilidad</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in probabilidades %}
+            <tr>
+                <td>{{ item.causa }}</td>
+                <td>{{ item.valor }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

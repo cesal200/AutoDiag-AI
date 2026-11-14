@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <span class="eyebrow">Distribución</span>
+    <h1>{{ title }}</h1>
+    <form>
+        <div class="field">
+            <label for="canal">Canal de entrega</label>
+            <select id="canal">
+                {% for canal in canales %}
+                <option>{{ canal }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="field">
+            <label for="destino">Destino</label>
+            <input id="destino" type="text" value="cliente@taller.com" />
+        </div>
+        <div class="button-row">
+            <button class="btn primary" type="button">Guardar configuración</button>
+            <a class="btn secondary" href="/api/distribucion/enviar/{{ orden_id }}/">Enviar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

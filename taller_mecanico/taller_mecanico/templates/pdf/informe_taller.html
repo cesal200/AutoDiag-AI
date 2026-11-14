@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Informe de Taller</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 24px;
+            color: #1f2937;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #dfe7f1;
+            padding-bottom: 18px;
+        }
+        h1 {
+            margin-bottom: 8px;
+            color: #0f172a;
+        }
+        .order-code {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1d4ed8;
+        }
+        .section {
+            margin: 20px 0;
+        }
+        .risk-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            color: #fff;
+            font-weight: bold;
+            background: #f59e0b;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 14px 0;
+        }
+        th, td {
+            border: 1px solid #dfe7f1;
+            padding: 8px 10px;
+            text-align: left;
+        }
+        th {
+            background: #f8fafc;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>AutoDiag AI - Sistema de Taller Mecánico</h1>
+        <div class="order-code">Orden: {{ orden_id|default:'N/A' }}</div>
+        <p>Fecha: {{ fecha|default:'Hoy' }}</p>
+    </div>
+
+    <div class="section">
+        <h3>Datos del Vehículo</h3>
+        <p><strong>Cliente:</strong> {{ cliente|default:'Sin datos' }}</p>
+        <p><strong>Vehículo:</strong> {{ vehiculo|default:'No especificado' }}</p>
+        <p><strong>Nivel de riesgo:</strong> <span class="risk-badge">{{ riesgo|default:'Precaución' }}</span></p>
+    </div>
+
+    <div class="section">
+        <h3>Diagnóstico IA</h3>
+        <p><strong>Síntomas normalizados:</strong> {{ sintomas|default:'No disponible' }}</p>
+        <p><strong>Conclusión:</strong> {{ conclusion|default:'Se requiere revisión técnica adicional.' }}</p>
+    </div>
+
+    <div class="section">
+        <h3>Presupuesto</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Concepto</th>
+                    <th>Tipo</th>
+                    <th>Cantidad</th>
+                    <th>Precio</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Revisión general</td>
+                    <td>Mano de obra</td>
+                    <td>1</td>
+                    <td>$300.00</td>
+                </tr>
+                <tr>
+                    <td>Repuesto de diagnóstico</td>
+                    <td>Repuesto</td>
+                    <td>1</td>
+                    <td>$180.00</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer">
+        <p>Generado el {{ fecha_generacion|default:'fecha actual' }} | AutoDiag AI System</p>
+    </div>
+</body>
+</html>

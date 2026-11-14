@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <span class="eyebrow">Reporte</span>
+    <h1>{{ title }}</h1>
+    <div class="result">
+        <p><strong>Orden:</strong> #{{ orden_id }}</p>
+        <p><strong>Cliente:</strong> {{ cliente }}</p>
+        <p><strong>Fecha:</strong> {{ fecha }}</p>
+        <p>El documento PDF ha sido preparado con el formato del taller y está listo para distribuir por Telegram o correo electrónico.</p>
+    </div>
+    <div class="button-row">
+        <a class="btn primary" href="/api/distribucion/enviar/{{ orden_id }}/">Enviar reporte</a>
+        <a class="btn secondary" href="/workshop/orden/lista/">Volver a órdenes</a>
+    </div>
+</div>
+{% endblock %}

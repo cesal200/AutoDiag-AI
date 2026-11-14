@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Informe de Taller - {{ orden.codigo_orden }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .order-code { font-size: 24px; font-weight: bold; color: #2c3e50; }
+        .vehicle-info { margin: 20px 0; }
+        .symptoms-section { margin: 20px 0; }
+        .risk-badge { padding: 5px 10px; border-radius: 4px; color: white; font-weight: bold; }
+        .risk-alto { background-color: #e74c3c; }
+        .risk-mediano { background-color: #f39c12; }
+        .risk-bajo { background-color: #27ae60; }
+        .budget-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        .budget-table th, .budget-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .budget-table th { background-color: #2c3e50; color: white; }
+        .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #7f8c8d; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>AutoDiag AI - Sistema de Taller Mecánico</h1>
+        <div class="order-code">Orden: {{ orden.codigo_orden }}</div>
+        <p>Fecha: {{ orden.fecha_creacion|date:"d/m/Y" }}</p>
+    </div>
+    
+    <div class="vehicle-info">
+        <h3>Datos del Vehículo</h3>
+        <p><strong>Placa:</strong> {{ orden.vehiculo }}</p>
+        <p><strong>Marca/Modelo:</strong> {{ orden.marca }} {{ orden.modelo }}</p>
+        <p><strong>Año:</strong> {{ orden.año }}</p>
+        <p><strong>Kilometraje:</strong> {{ orden.kilometraje_ingreso }} km</p>
+    </div>
+    
+    <div class="symptoms-section">
+        <h3>Diagnóstico IA</h3>
+        <p><strong>Síntomas Normalizados:</strong> {{ analisis.sintomas_normalizados|default:"N/A" }}</p>
+        
+        <p><strong>Nivel de Riesgo:</strong> 
+            <span class="risk-badge {{ analisis.nivel_riesgo|lower }}">{{ analisis.nivel_riesgo }}</span>
+        </p>
+        
+        <p><strong>Causas Probables:</strong></p>
+        <ul>
+        {% for causa in analisis.causas_probables %}
+            <li>{{ causa.causa }} - Probabilidad: {{ causa.probabilidad }}</li>
+        {% empty %}
+            <li>No disponible</li>
+        {% endfor %}
+        </ul>
+        
+        <p><strong>Pruebas de Taller Sugeridas:</strong> {{ analisis.pruebas_taller_sugeridas|default:"N/A" }}</p>
+    </div>
+    
+    <div class="budget-table">
+        <thead>
+            <tr>
+                <th>Concepto</th>
+                <th>Tipo</th>
+                <th>Cantidad</th>
+                <th>Precio Unitario</th>
+                <th>Total</th>
+                <th>Aprobado</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in orden.items_presupuesto.all %}
+            <tr>
+                <td>{{ item.descripcion }}</td>
+                <td>{{ item.get_tipo_display }}</td>
+                <td>{{ item.cantidad }}</td>
+                <td>${{ item.precio_unitario }}</td>
+                <td>${{ item.precio_unitario|multiply:item.cantidad }}</td>
+                <td>{% if item.aprobado_cliente %}Sí{% else %}No{% endif %}</td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="6">No hay items de presupuesto</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="2"><strong>Total:</strong></td>
+                <td colspan="2"></td>
+                <td>${{ orden.total_presupuesto }}</td>
+                <td></td>
+            </tr>
+        </tfoot>
+        </tbody>
+    </div>
+    
+    <div class="footer">
+        <p>Generado el {{ fecha_generacion|date:"d/m/Y H:i" }} | AutoDiag AI System</p>
+        <p>Para distribuir: Telegram / Email / Descargar localmente</p>
+    </div>
+</body>
+</html>

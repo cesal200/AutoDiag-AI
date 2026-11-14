@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <span class="eyebrow">IA</span>
+    <h1>{{ title }}</h1>
+    <div class="result">
+        <p><strong>Orden:</strong> #{{ orden_id }}</p>
+        <p>{{ resultado }}</p>
+    </div>
+    <div class="button-row">
+        <a class="btn primary" href="/api/diagnostico/resultado/1/">Ver resultados</a>
+        <a class="btn secondary" href="/workshop/orden/{{ orden_id }}/">Volver a la orden</a>
+    </div>
+</div>
+{% endblock %}

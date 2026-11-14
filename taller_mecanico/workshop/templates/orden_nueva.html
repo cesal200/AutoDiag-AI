@@ -1,0 +1,29 @@
+<h2>Nueva Orden</h2>
+<form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+        <label>Placa del Vehículo:</label>
+        <input type="text" name="placa" required>
+    </div>
+    <div class="form-group">
+        <label>Marca y Modelo:</label>
+        <input type="text" name="marca_modelo" required>
+    </div>
+    <div class="form-group">
+        <label>Año:</label>
+        <input type="number" name="anio" required>
+    </div>
+    <div class="form-group">
+        <label>Kilometraje:</label>
+        <input type="number" name="kilometraje" required>
+    </div>
+    <div class="form-group">
+        <label>Narrativa del Cliente:</label>
+        <textarea name="narrativa" rows="3" required></textarea>
+    </div>
+    <div class="form-group">
+        <label>Grabar Nota de Voz (opcional):</label>
+        <input type="file" name="audio">
+    </div>
+    <button type="submit" class="btn">Crear Orden</button>
+</form>

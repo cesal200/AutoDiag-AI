@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <div>
+        <span class="eyebrow">Panel principal</span>
+        <h1>Automatiza la recepción y diagnóstico del taller</h1>
+        <p class="subtitle">{{ summary }}</p>
+        <div class="button-row">
+            <a class="btn primary" href="/workshop/orden/nueva/">Crear orden</a>
+            <a class="btn secondary" href="/workshop/orden/lista/">Ver órdenes</a>
+        </div>
+    </div>
+    <div class="panel">
+        <span class="badge">Sistema activo</span>
+        <ul style="margin: 18px 0 0; padding-left: 18px; color: #475569; line-height: 1.8;">
+            <li>Pre-diagnóstico multimodal con IA</li>
+            <li>Flujo de trabajo del taller</li>
+            <li>Generación de reportes PDF</li>
+            <li>Distribución por Telegram y correo</li>
+        </ul>
+    </div>
+</div>
+
+<div class="metrics">
+    <div class="metric">
+        <span>órdenes hoy</span>
+        <strong>24</strong>
+    </div>
+    <div class="metric">
+        <span>diagnósticos IA</span>
+        <strong>18</strong>
+    </div>
+    <div class="metric">
+        <span>reportes enviados</span>
+        <strong>11</strong>
+    </div>
+</div>
+
+<div class="grid">
+    <div class="card">
+        <h2>Flujo operativo</h2>
+        <ul>
+            <li>Registro del cliente y vehículo</li>
+            <li>Captura de síntoma con audio e imagen</li>
+            <li>Procesamiento IA para causas probables</li>
+            <li>Seguimiento del estado de la orden</li>
+        </ul>
+    </div>
+    <div class="card">
+        <h2>Acciones rápidas</h2>
+        <ul>
+            <li><a href="/workshop/orden/nueva/">Nueva orden de trabajo</a></li>
+            <li><a href="/workshop/orden/lista/">Ver lista de órdenes</a></li>
+            <li><a href="/api/diagnostico/resultado/1/">Consultar análisis</a></li>
+            <li><a href="/api/distribucion/enviar/101/">Enviar reporte</a></li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

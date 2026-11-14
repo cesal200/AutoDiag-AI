@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <span class="eyebrow">Operación</span>
+    <h1>{{ title }}</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Cliente</th>
+                <th>Vehículo</th>
+                <th>Estado</th>
+                <th>Prioridad</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for orden in ordenes %}
+            <tr>
+                <td>#{{ orden.id }}</td>
+                <td>{{ orden.cliente }}</td>
+                <td>{{ orden.vehiculo }}</td>
+                <td><span class="status {% if orden.prioridad == 'Alta' %}danger{% elif orden.prioridad == 'Media' %}warning{% endif %}">{{ orden.estado }}</span></td>
+                <td>{{ orden.prioridad }}</td>
+                <td><a href="/workshop/orden/{{ orden.id }}/">Abrir</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

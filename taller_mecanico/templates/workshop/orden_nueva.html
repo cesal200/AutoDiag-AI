@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <span class="eyebrow">Recepción</span>
+    <h1>{{ title }}</h1>
+    <p class="subtitle">{{ subtitle }}</p>
+
+    <form>
+        <div class="field">
+            <label for="cliente">Cliente</label>
+            <input id="cliente" type="text" placeholder="Nombre del cliente" value="Ana García" />
+        </div>
+        <div class="field">
+            <label for="vehiculo">Vehículo</label>
+            <input id="vehiculo" type="text" placeholder="Marca, modelo y año" value="Toyota Corolla 2021" />
+        </div>
+        <div class="field">
+            <label for="placa">Placa</label>
+            <input id="placa" type="text" placeholder="ABC-1234" value="ABC-1234" />
+        </div>
+        <div class="field">
+            <label for="sintoma">Síntoma reportado</label>
+            <textarea id="sintoma" placeholder="Describe el problema del cliente">Vibración al acelerar y luz de motor encendida</textarea>
+        </div>
+        <div class="button-row">
+            <button class="btn primary" type="button">Guardar orden</button>
+            <button class="btn secondary" type="button">Analizar con IA</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
