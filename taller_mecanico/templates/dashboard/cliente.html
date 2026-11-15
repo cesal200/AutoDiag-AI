@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <div>
+        <span class="eyebrow">Mi cuenta</span>
+        <h1>Hola, {{ user.get_full_name|default:user.get_username }}</h1>
+        <p class="subtitle">Consulta el estado de tus vehículos y comparte el enlace de seguimiento con quien necesites.</p>
+        <div class="button-row">
+            <a class="btn primary" href="{% url 'orden_nueva' %}">Registrar una orden</a>
+            <a class="btn secondary" href="{% url 'orden_lista' %}">Ver todas mis órdenes</a>
+        </div>
+    </div>
+    <div class="panel">
+        <span class="badge">Cliente</span>
+        <ul style="margin: 18px 0 0; padding-left: 18px; line-height: 1.8;">
+            <li>Órdenes asociadas a tu cuenta</li>
+            <li>Seguimiento por enlace público</li>
+            <li>Aprobación de presupuestos</li>
+            <li>Historial de estados</li>
+        </ul>
+    </div>
+</div>
+
+<div class="metrics">
+    <div class="metric"><span>mis órdenes</span><strong>{{ total_ordenes }}</strong></div>
+    <div class="metric"><span>activas</span><strong>{{ ordenes_activas }}</strong></div>
+    <div class="metric"><span>entregadas</span><strong>{{ ordenes_entregadas }}</strong></div>
+</div>
+
+<div class="panel" style="margin-top: 20px;">
+    <h2>Mis órdenes</h2>
+    {% if ordenes %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Vehículo</th>
+                    <th>Estado</th>
+                    <th>Ingreso</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for orden in ordenes %}
+                    <tr>
+                        <td>{{ orden.codigo_orden }}</td>
+                        <td>{{ orden.vehiculo }}</td>
+                        <td><span class="status">{{ orden.get_estado_display }}</span></td>
+                        <td>{{ orden.creado_en|date:'d/m/Y' }}</td>
+                        <td>
+                            <a href="{% url 'orden_detalle' orden.pk %}">Detalle</a>
+                            {% if orden.token_vigente %}
+                                · <a href="{% url 'seguimiento_publico' orden.token_publico %}" target="_blank" rel="noopener">Seguimiento</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty">Aún no tienes órdenes. Registra la primera para comenzar.</p>
+    {% endif %}
+</div>
+{% endblock %}

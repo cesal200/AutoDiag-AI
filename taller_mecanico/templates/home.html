@@ -9,54 +9,71 @@
         <h1>Automatiza la recepción y diagnóstico del taller</h1>
         <p class="subtitle">{{ summary }}</p>
         <div class="button-row">
-            <a class="btn primary" href="/workshop/orden/nueva/">Crear orden</a>
-            <a class="btn secondary" href="/workshop/orden/lista/">Ver órdenes</a>
+            {% if user.is_authenticated %}
+                <a class="btn primary" href="{% url 'dashboard' %}">Ir a mi panel</a>
+                <a class="btn secondary" href="{% url 'orden_lista' %}">Ver órdenes</a>
+            {% else %}
+                <a class="btn primary" href="{% url 'login' %}">Ingresar</a>
+                <a class="btn secondary" href="{% url 'registro' %}">Crear cuenta de cliente</a>
+            {% endif %}
         </div>
     </div>
     <div class="panel">
         <span class="badge">Sistema activo</span>
-        <ul style="margin: 18px 0 0; padding-left: 18px; color: #475569; line-height: 1.8;">
+        <ul style="margin: 18px 0 0; padding-left: 18px; line-height: 1.8;">
             <li>Pre-diagnóstico multimodal con IA</li>
-            <li>Flujo de trabajo del taller</li>
-            <li>Generación de reportes PDF</li>
-            <li>Distribución por Telegram y correo</li>
+            <li>Paneles para administrador, cliente y técnico</li>
+            <li>Seguimiento público por enlace</li>
+            <li>Órdenes walk-in y clientes rápidos</li>
         </ul>
     </div>
 </div>
 
-<div class="metrics">
-    <div class="metric">
-        <span>órdenes hoy</span>
-        <strong>24</strong>
+{% if user.is_authenticated %}
+<div class="grid">
+    <div class="card">
+        <h2>Acciones rápidas</h2>
+        <ul>
+            <li><a href="{% url 'dashboard' %}">Ir a mi panel</a></li>
+            <li><a href="{% url 'orden_lista' %}">Consultar órdenes</a></li>
+            {% if rol_actual != 'MECANICO' %}
+                <li><a href="{% url 'orden_nueva' %}">Registrar una orden</a></li>
+            {% endif %}
+            {% if es_admin_operativo %}
+                <li><a href="{% url 'cliente_rapido' %}">Crear cliente rápido</a></li>
+                <li><a href="/admin/">Abrir Django admin</a></li>
+            {% endif %}
+        </ul>
     </div>
-    <div class="metric">
-        <span>diagnósticos IA</span>
-        <strong>18</strong>
-    </div>
-    <div class="metric">
-        <span>reportes enviados</span>
-        <strong>11</strong>
+    <div class="card">
+        <h2>Tu acceso</h2>
+        <ul>
+            <li>Usuario: <strong>{{ user.get_username }}</strong></li>
+            <li>Rol: <strong>{{ rol_display }}</strong></li>
+            <li>Las vistas y acciones se adaptan a tu rol.</li>
+        </ul>
     </div>
 </div>
-
+{% else %}
 <div class="grid">
     <div class="card">
         <h2>Flujo operativo</h2>
         <ul>
             <li>Registro del cliente y vehículo</li>
-            <li>Captura de síntoma con audio e imagen</li>
+            <li>Captura de síntoma y evidencias</li>
             <li>Procesamiento IA para causas probables</li>
             <li>Seguimiento del estado de la orden</li>
         </ul>
     </div>
     <div class="card">
-        <h2>Acciones rápidas</h2>
+        <h2>Acceso por rol</h2>
         <ul>
-            <li><a href="/workshop/orden/nueva/">Nueva orden de trabajo</a></li>
-            <li><a href="/workshop/orden/lista/">Ver lista de órdenes</a></li>
-            <li><a href="/api/diagnostico/resultado/1/">Consultar análisis</a></li>
-            <li><a href="/api/distribucion/enviar/101/">Enviar reporte</a></li>
+            <li>Administrador y asesor: gestión completa</li>
+            <li>Cliente: sus órdenes y presupuestos</li>
+            <li>Técnico: órdenes asignadas</li>
+            <li>Walk-in: seguimiento por enlace público</li>
         </ul>
     </div>
 </div>
+{% endif %}
 {% endblock %}

@@ -4,97 +4,166 @@
     <meta charset="UTF-8">
     <title>Informe de Taller - {{ orden.codigo_orden }}</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .order-code { font-size: 24px; font-weight: bold; color: #2c3e50; }
-        .vehicle-info { margin: 20px 0; }
-        .symptoms-section { margin: 20px 0; }
-        .risk-badge { padding: 5px 10px; border-radius: 4px; color: white; font-weight: bold; }
-        .risk-alto { background-color: #e74c3c; }
-        .risk-mediano { background-color: #f39c12; }
-        .risk-bajo { background-color: #27ae60; }
-        .budget-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        .budget-table th, .budget-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        .budget-table th { background-color: #2c3e50; color: white; }
-        .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #7f8c8d; }
+        @page { size: A4; margin: 18mm 16mm; }
+        body { font-family: Helvetica, Arial, sans-serif; font-size: 10pt; color: #1f2937; }
+        h1 { font-size: 18pt; color: #0f172a; margin: 0 0 4pt; }
+        h2 { font-size: 12pt; color: #0f172a; margin: 14pt 0 6pt; border-bottom: 1pt solid #cbd5e1; padding-bottom: 3pt; }
+        h3 { font-size: 10pt; color: #334155; margin: 10pt 0 4pt; }
+        p { margin: 3pt 0; line-height: 1.35; }
+        .header { text-align: center; border-bottom: 2pt solid #f59e0b; padding-bottom: 10pt; margin-bottom: 10pt; }
+        .order-code { font-size: 15pt; font-weight: bold; color: #b45309; }
+        .muted { color: #64748b; }
+        .grid { width: 100%; margin-top: 6pt; }
+        .grid td { vertical-align: top; padding: 3pt 4pt; }
+        .table { width: 100%; margin-top: 6pt; }
+        .table th, .table td { border: 0.5pt solid #cbd5e1; padding: 5pt; text-align: left; vertical-align: top; }
+        .table th { background: #0f172a; color: #ffffff; font-size: 8.5pt; }
+        .risk { padding: 3pt 7pt; color: #ffffff; font-weight: bold; }
+        .risk-PUEDE_RODAR { background: #16a34a; }
+        .risk-PRECAUCION { background: #d97706; }
+        .risk-NO_MOVER_GRUA { background: #dc2626; }
+        .footer { margin-top: 18pt; border-top: 0.5pt solid #cbd5e1; padding-top: 6pt; text-align: center; font-size: 8pt; color: #64748b; }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>AutoDiag AI - Sistema de Taller Mecánico</h1>
-        <div class="order-code">Orden: {{ orden.codigo_orden }}</div>
-        <p>Fecha: {{ orden.fecha_creacion|date:"d/m/Y" }}</p>
+        <h1>AutoDiag AI · Informe de Taller</h1>
+        <div class="order-code">Orden {{ orden.codigo_orden }} / Ticket {{ orden.ticket }}</div>
+        <p class="muted">Generado el {{ fecha_generacion|date:"d/m/Y H:i" }}</p>
     </div>
-    
-    <div class="vehicle-info">
-        <h3>Datos del Vehículo</h3>
-        <p><strong>Placa:</strong> {{ orden.vehiculo }}</p>
-        <p><strong>Marca/Modelo:</strong> {{ orden.marca }} {{ orden.modelo }}</p>
-        <p><strong>Año:</strong> {{ orden.año }}</p>
-        <p><strong>Kilometraje:</strong> {{ orden.kilometraje_ingreso }} km</p>
-    </div>
-    
-    <div class="symptoms-section">
-        <h3>Diagnóstico IA</h3>
-        <p><strong>Síntomas Normalizados:</strong> {{ analisis.sintomas_normalizados|default:"N/A" }}</p>
-        
-        <p><strong>Nivel de Riesgo:</strong> 
-            <span class="risk-badge {{ analisis.nivel_riesgo|lower }}">{{ analisis.nivel_riesgo }}</span>
+
+    <table class="grid">
+        <tr>
+            <td width="50%">
+                <h3>Cliente</h3>
+                <p><strong>{{ orden.cliente_efectivo }}</strong></p>
+                <p>{% if orden.cliente %}{{ orden.cliente.email }}{% else %}Cliente sin cuenta{% endif %}</p>
+                <p>Teléfono: {{ orden.telefono_cliente_walkin|default:"—" }}</p>
+            </td>
+            <td width="50%">
+                <h3>Vehículo</h3>
+                <p><strong>{{ orden.vehiculo.placa }}</strong></p>
+                <p>{{ orden.vehiculo.marca }} {{ orden.vehiculo.modelo }} · {{ orden.vehiculo.anio }}</p>
+                <p>Motor: {{ orden.vehiculo.motor|default:"—" }} · Kilometraje: {{ orden.kilometraje_ingreso }} km</p>
+            </td>
+        </tr>
+    </table>
+
+    <h2>Orden de trabajo</h2>
+    <table class="grid">
+        <tr>
+            <td><strong>Taller:</strong> {{ orden.taller.nombre }}</td>
+            <td><strong>Estado:</strong> {{ orden.get_estado_display }}</td>
+            <td><strong>Ingreso:</strong> {{ orden.creado_en|date:"d/m/Y H:i" }}</td>
+        </tr>
+        <tr>
+            <td><strong>Mecánico:</strong> {% if orden.mecanico_asignado %}{{ orden.mecanico_asignado.get_full_name|default:orden.mecanico_asignado.get_username }}{% else %}Sin asignar{% endif %}</td>
+            <td colspan="2"><strong>Etiquetas:</strong> {% for etiqueta in orden.etiquetas.all %}{{ etiqueta.nombre }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</td>
+        </tr>
+    </table>
+
+    <h2>Pre-diagnóstico IA</h2>
+    {% if analisis %}
+        <p>
+            <strong>Nivel de riesgo:</strong>
+            <span class="risk risk-{{ analisis.nivel_riesgo }}">{{ analisis.get_nivel_riesgo_display }}</span>
         </p>
-        
-        <p><strong>Causas Probables:</strong></p>
-        <ul>
-        {% for causa in analisis.causas_probables %}
-            <li>{{ causa.causa }} - Probabilidad: {{ causa.probabilidad }}</li>
-        {% empty %}
-            <li>No disponible</li>
-        {% endfor %}
-        </ul>
-        
-        <p><strong>Pruebas de Taller Sugeridas:</strong> {{ analisis.pruebas_taller_sugeridas|default:"N/A" }}</p>
-    </div>
-    
-    <div class="budget-table">
+        <h3>Síntomas normalizados</h3>
+        <table class="table">
+            <thead><tr><th>Código</th><th>Componente</th><th>Síntoma</th></tr></thead>
+            <tbody>
+                {% for sintoma in analisis.sintomas_normalizados %}
+                    <tr>
+                        <td>{{ sintoma.codigo }}</td>
+                        <td>{{ sintoma.componente }}</td>
+                        <td>{{ sintoma.sintoma }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="3">Sin síntomas normalizados.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h3>Causas probables</h3>
+        <table class="table">
+            <thead><tr><th>#</th><th>Causa</th><th>Probabilidad</th></tr></thead>
+            <tbody>
+                {% for causa in analisis.causas_probables %}
+                    <tr>
+                        <td>{{ causa.ranking }}</td>
+                        <td>{{ causa.causa }}</td>
+                        <td>{{ causa.probabilidad }}%</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="3">Sin causas calculadas.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h3>Pruebas de taller sugeridas</h3>
+        <table class="table">
+            <thead><tr><th>Prueba</th><th>Procedimiento</th><th>Valor esperado</th></tr></thead>
+            <tbody>
+                {% for prueba in analisis.pruebas_taller_sugeridas %}
+                    <tr>
+                        <td>{{ prueba.prueba }}</td>
+                        <td>{{ prueba.procedimiento }}</td>
+                        <td>{{ prueba.valor_esperado }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="3">Sin pruebas sugeridas.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No hay análisis IA registrado para esta orden.</p>
+    {% endif %}
+
+    <h2>Evidencias</h2>
+    <table class="table">
+        <thead><tr><th>Tipo</th><th>Descripción</th><th>Archivo</th></tr></thead>
+        <tbody>
+            {% for evidencia in evidencias %}
+                <tr>
+                    <td>{{ evidencia.get_nivel_riesgo_display }}</td>
+                    <td>{{ evidencia.narrativa_cliente|default:"—" }}</td>
+                    <td>
+                        {% if evidencia.archivo_audio %}Audio{% endif %}
+                        {% if evidencia.imagen %}{% if evidencia.archivo_audio %} / {% endif %}Imagen{% endif %}
+                        {% if not evidencia.archivo_audio and not evidencia.imagen %}—{% endif %}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="3">Sin evidencias registradas.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Presupuesto</h2>
+    <table class="table">
         <thead>
-            <tr>
-                <th>Concepto</th>
-                <th>Tipo</th>
-                <th>Cantidad</th>
-                <th>Precio Unitario</th>
-                <th>Total</th>
-                <th>Aprobado</th>
-            </tr>
+            <tr><th>Concepto</th><th>Tipo</th><th>Cantidad</th><th>Precio unitario</th><th>Subtotal</th><th>Aprobado</th></tr>
         </thead>
         <tbody>
-        {% for item in orden.items_presupuesto.all %}
-            <tr>
-                <td>{{ item.descripcion }}</td>
-                <td>{{ item.get_tipo_display }}</td>
-                <td>{{ item.cantidad }}</td>
-                <td>${{ item.precio_unitario }}</td>
-                <td>${{ item.precio_unitario|multiply:item.cantidad }}</td>
-                <td>{% if item.aprobado_cliente %}Sí{% else %}No{% endif %}</td>
-            </tr>
-        {% empty %}
-            <tr>
-                <td colspan="6">No hay items de presupuesto</td>
-            </tr>
-        {% endfor %}
+            {% for item in items_presupuesto %}
+                <tr>
+                    <td>{{ item.descripcion }}</td>
+                    <td>{{ item.get_tipo_display }}</td>
+                    <td>{{ item.cantidad }}</td>
+                    <td>${{ item.precio_unitario }}</td>
+                    <td>${{ item.subtotal }}</td>
+                    <td>{% if item.aprobado_cliente %}Sí{% else %}No{% endif %}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="6">Sin ítems de presupuesto.</td></tr>
+            {% endfor %}
         </tbody>
-        <tfoot>
-            <tr>
-                <td colspan="2"><strong>Total:</strong></td>
-                <td colspan="2"></td>
-                <td>${{ orden.total_presupuesto }}</td>
-                <td></td>
-            </tr>
-        </tfoot>
-        </tbody>
-    </div>
-    
+    </table>
+    <p><strong>Total: ${{ total_presupuesto }}</strong></p>
+
     <div class="footer">
-        <p>Generado el {{ fecha_generacion|date:"d/m/Y H:i" }} | AutoDiag AI System</p>
-        <p>Para distribuir: Telegram / Email / Descargar localmente</p>
+        <p>AutoDiag AI · Documento generado automáticamente. Las probabilidades son orientativas y no sustituyen la inspección técnica.</p>
+        <p>Generado el {{ fecha_generacion|date:"d/m/Y H:i" }}</p>
     </div>
 </body>
 </html>

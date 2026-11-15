@@ -9,9 +9,12 @@ echo ==========================================
 echo.
 
 echo Verificando entorno virtual...
-if exist .venv (
-    echo Entorno virtual encontrado.
-    call .venv\Scripts\activate
+if exist "%~dp0..\.venv\Scripts\activate.bat" (
+    echo Entorno virtual de la raiz encontrado.
+    call "%~dp0..\.venv\Scripts\activate.bat"
+) else if exist "%~dp0.venv\Scripts\activate.bat" (
+    echo Entorno virtual local encontrado.
+    call "%~dp0.venv\Scripts\activate.bat"
 ) else (
     echo No se encuentra entorno virtual.
     echo Instalando dependencias...
@@ -29,7 +32,7 @@ echo ==========================================
 echo   Acceso al sistema:
 echo   - Web: http://127.0.0.1:8000
 echo   - Admin: http://127.0.0.1:8000/admin/
-echo   - Usuario: admin / password: admin123
+echo   - Usuario demo (si se cargo seed_demo): admin / demo12345
 echo ==========================================
 echo.
 

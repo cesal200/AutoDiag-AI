@@ -165,12 +165,15 @@ pip install -r requirements.txt
 python -m django --version
 ```
 
-5. Crear migraciones si el proyecto evoluciona a modelos reales:
+5. Configurar variables de entorno y migrar:
 
 ```bash
-python manage.py makemigrations
+cp .env.example .env
 python manage.py migrate
+python manage.py seed_demo
 ```
+
+Edite `.env` con la clave de Django y, opcionalmente, `OPENAI_API_KEY`, Telegram y SMTP. El motor local funciona sin claves externas.
 
 ## Ejecución de la aplicación
 
@@ -196,15 +199,45 @@ start_django.bat
 El proyecto cuenta con rutas principales para acceder a los módulos clave:
 
 ```text
-/                     -> Inicio del sistema
-/workshop/orden/nueva/    -> Crear nueva orden
-/workshop/orden/lista/    -> Lista de órdenes
-/workshop/orden/<id>/     -> Detalle de orden
-/api/diagnostico/analizar/<id>/   -> Diagnóstico IA
-/api/diagnostico/resultado/<id>/  -> Resultado del análisis
+/                                  -> Inicio del sistema
+/accounts/login/                   -> Login
+/registro/                         -> Registro público de clientes
+/panel/                            -> Redirección al panel según rol
+/panel/admin/                      -> Panel de administrador / asesor
+/panel/cliente/                    -> Panel del cliente
+/panel/tecnico/                    -> Panel del técnico
+/panel/clientes/nuevo/             -> Alta rápida de cliente
+/seguimiento/<token>/              -> Portal público de seguimiento
+/workshop/vehiculo/nuevo/          -> Registrar vehículo
+/workshop/orden/nueva/             -> Crear nueva orden
+/workshop/orden/lista/             -> Lista de órdenes filtrada por rol
+/workshop/orden/<id>/              -> Detalle de orden
+/workshop/pdf/<id>/                -> Vista previa del PDF
+/workshop/pdf/<id>/descargar/      -> Descarga del PDF
+/api/diagnostico/analizar/<id>/    -> Diagnóstico IA
+/api/diagnostico/resultado/<id>/   -> Resultado del análisis
 /api/distribucion/configurar/<id>/ -> Configuración de entrega
 /api/distribucion/enviar/<id>/     -> Envío de reporte
 ```
+
+## Roles y acceso
+
+El sistema usa `PerfilUsuario` sobre el `User` de Django con cuatro roles:
+
+- `ADMIN`: acceso operativo completo y Django admin.
+- `ASESOR`: acceso operativo completo, sin Django admin.
+- `MECANICO`: solo órdenes asignadas; estado, evidencias y presupuesto.
+- `CLIENTE`: solo sus órdenes; alta, seguimiento y aprobación de presupuesto.
+
+Los clientes pueden registrarse públicamente. Los técnicos y asesores se crean desde el admin o con el comando de datos demo:
+
+```bash
+python manage.py seed_demo
+```
+
+Credenciales locales de demostración: `admin`, `asesor`, `tecnico` y `cliente`, todas con contraseña `demo12345`.
+
+Las órdenes walk-in permiten registrar un cliente sin cuenta indicando nombre y teléfono. Toda orden genera un enlace público `seguimiento/<token>/` que el administrador o asesor puede compartir.
 
 ## Flujo de trabajo
 
@@ -229,19 +262,20 @@ Este proyecto incluye documentación complementaria en:
 
 ## Notas de desarrollo
 
-- El proyecto está en una etapa inicial de implementación funcional.
-- La base de datos actual es SQLite para facilitar desarrollo local y pruebas.
-- El sistema ya tiene una estructura base para varios módulos, pero aún puede requerir más integración real con IA, almacenamiento persistente y APIs externas.
-- Los templates y las vistas están listas para continuar ampliando la experiencia de usuario web.
+- El sistema incluye autenticación, roles, paneles, gestión de órdenes, presupuestos, evidencias, PDF y distribución.
+- `Taller` y `Vehiculo` son entidades persistentes; `OrdenFalla` conserva códigos `OR-YYYY-NNN` y tickets `TKT-YYYY-NNN`.
+- El pre-diagnóstico usa una taxonomía local determinista y, si existe `OPENAI_API_KEY`, enriquece audio y visión con OpenAI.
+- La generación de PDF usa `xhtml2pdf` y está cubierta por pruebas de tiempo y datos opcionales.
+- Telegram y SMTP se configuran por variables de entorno; `python manage.py check_distribucion` valida las conexiones.
+- La suite de pruebas cubre modelos, permisos, pipeline IA, ciclo de vida, PDF y distribución con mocks.
 
 ## Siguiente evolución recomendada
 
-- Conectar modelos reales de base de datos.
-- Implementar autenticación de usuarios y roles.
-- Integrar un modelo de IA real para diagnóstico multimodal.
-- Generar PDF desde información real almacenada.
-- Añadir envío real por Telegram y SMTP.
-- Añadir panel administrativo con CRUD completo.
+- Añadir aislamiento multi-taller por usuario y permisos por taller.
+- Incorporar notificaciones en tiempo real y auditoría de cambios de estado.
+- Añadir flujo de invitación o restablecimiento de contraseña para clientes rápidos.
+- Endurecer la validación de archivos y almacenar media en un servicio externo.
+- Medir precisión real de transcripción y visión con un conjunto de pruebas del taller.
 
 ## Licencia
 

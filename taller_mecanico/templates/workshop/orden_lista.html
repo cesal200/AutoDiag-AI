@@ -7,29 +7,85 @@
     <span class="eyebrow">Operación</span>
     <h1>{{ title }}</h1>
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Cliente</th>
-                <th>Vehículo</th>
-                <th>Estado</th>
-                <th>Prioridad</th>
-                <th>Acción</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for orden in ordenes %}
-            <tr>
-                <td>#{{ orden.id }}</td>
-                <td>{{ orden.cliente }}</td>
-                <td>{{ orden.vehiculo }}</td>
-                <td><span class="status {% if orden.prioridad == 'Alta' %}danger{% elif orden.prioridad == 'Media' %}warning{% endif %}">{{ orden.estado }}</span></td>
-                <td>{{ orden.prioridad }}</td>
-                <td><a href="/workshop/orden/{{ orden.id }}/">Abrir</a></td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <form method="get" class="inline-form">
+        <div class="field">
+            <label for="q">Buscar</label>
+            <input id="q" name="q" type="search" value="{{ busqueda }}" placeholder="Código, ticket, placa, cliente...">
+        </div>
+        <div class="field">
+            <label for="estado">Estado</label>
+            <select id="estado" name="estado">
+                <option value="">Todos</option>
+                {% for codigo, etiqueta in estados %}
+                    <option value="{{ codigo }}" {% if estado_actual == codigo %}selected{% endif %}>{{ etiqueta }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="field">
+            <label for="vehiculo">Vehículo</label>
+            <input id="vehiculo" name="vehiculo" type="search" value="{{ vehiculo_actual }}" placeholder="Placa, marca o modelo">
+        </div>
+        {% if es_admin_operativo %}
+            <div class="field">
+                <label for="mecanico">Mecánico</label>
+                <select id="mecanico" name="mecanico">
+                    <option value="">Todos</option>
+                    <option value="sin_asignar" {% if mecanico_actual == 'sin_asignar' %}selected{% endif %}>Sin asignar</option>
+                    {% for tecnico in mecanicos %}
+                        <option value="{{ tecnico.pk }}" {% if mecanico_actual == tecnico.pk|stringformat:'s' %}selected{% endif %}>
+                            {{ tecnico.get_full_name|default:tecnico.get_username }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        {% endif %}
+        <button class="btn secondary" type="submit">Filtrar</button>
+        {% if es_admin_operativo %}
+            <a class="btn primary" href="{% url 'orden_nueva' %}">Nueva orden</a>
+        {% endif %}
+    </form>
+
+    {% if ordenes %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Ticket</th>
+                    <th>Código</th>
+                    <th>Cliente</th>
+                    <th>Vehículo</th>
+                    <th>Estado</th>
+                    <th>Mecánico</th>
+                    <th>Ingreso</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for orden in ordenes %}
+                    <tr>
+                        <td>{{ orden.ticket }}</td>
+                        <td>{{ orden.codigo_orden }}</td>
+                        <td>
+                            {{ orden.cliente_efectivo }}
+                            {% if orden.es_walkin %}<span class="status warning">walk-in</span>{% endif %}
+                        </td>
+                        <td>
+                            {{ orden.vehiculo.placa }}<br>
+                            <span class="subtitle">{{ orden.vehiculo.marca }} {{ orden.vehiculo.modelo }} {{ orden.vehiculo.anio }}</span>
+                        </td>
+                        <td>
+                            <span class="status {% if orden.estado == 'ESPERA_REPUESTO' %}warning{% elif orden.estado == 'PRE_DIAGNOSTICO' %}danger{% endif %}">
+                                {{ orden.get_estado_display }}
+                            </span>
+                        </td>
+                        <td>{% if orden.mecanico_asignado %}{{ orden.mecanico_asignado.get_username }}{% else %}—{% endif %}</td>
+                        <td>{{ orden.creado_en|date:'d/m/Y' }}</td>
+                        <td><a href="{% url 'orden_detalle' orden.pk %}">Abrir</a></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty">No hay órdenes para mostrar.</p>
+    {% endif %}
 </div>
 {% endblock %}

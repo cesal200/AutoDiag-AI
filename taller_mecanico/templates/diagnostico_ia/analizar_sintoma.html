@@ -6,13 +6,61 @@
 <div class="panel">
     <span class="eyebrow">IA</span>
     <h1>{{ title }}</h1>
-    <div class="result">
-        <p><strong>Orden:</strong> #{{ orden_id }}</p>
-        <p>{{ resultado }}</p>
+    <p class="subtitle">
+        Orden <strong>{{ orden.codigo_orden }}</strong> ·
+        {{ orden.vehiculo.marca }} {{ orden.vehiculo.modelo }} {{ orden.vehiculo.anio }}
+    </p>
+
+    <div class="detail-grid">
+        <div class="card">
+            <h2>Entradas detectadas</h2>
+            {% if evidencias %}
+                <ul>
+                    {% for evidencia in evidencias %}
+                        <li>
+                            <strong>{{ evidencia.get_nivel_riesgo_display }}</strong>
+                            {% if evidencia.narrativa_cliente %}<br>{{ evidencia.narrativa_cliente }}{% endif %}
+                            {% if evidencia.archivo_audio %}<br>Audio adjunto{% endif %}
+                            {% if evidencia.imagen %}<br>Imagen adjunta{% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="empty">No hay evidencias. Se analizarán los datos del vehículo.</p>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2>Ejecutar análisis</h2>
+            <p class="subtitle">El motor combina narrativa, audio, imágenes y datos del vehículo.</p>
+            <form method="post">
+                {% csrf_token %}
+                <button class="btn primary" type="submit">Analizar con IA</button>
+            </form>
+        </div>
     </div>
+
+    {% if analisis_previos %}
+        <h2 style="margin-top: 24px;">Análisis anteriores</h2>
+        <table class="table">
+            <thead>
+                <tr><th>Fecha</th><th>Riesgo</th><th>Confianza audio</th><th>Acción</th></tr>
+            </thead>
+            <tbody>
+                {% for analisis in analisis_previos %}
+                    <tr>
+                        <td>{{ analisis.creado_en|date:'d/m/Y H:i' }}</td>
+                        <td>{{ analisis.get_nivel_riesgo_display }}</td>
+                        <td>{{ analisis.transcripcion_confianza|floatformat:0 }}%</td>
+                        <td><a href="{% url 'resultado_analisis' analisis.pk %}">Ver</a></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+
     <div class="button-row">
-        <a class="btn primary" href="/api/diagnostico/resultado/1/">Ver resultados</a>
-        <a class="btn secondary" href="/workshop/orden/{{ orden_id }}/">Volver a la orden</a>
+        <a class="btn secondary" href="{% url 'orden_detalle' orden.pk %}">Volver a la orden</a>
     </div>
 </div>
 {% endblock %}

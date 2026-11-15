@@ -4,23 +4,70 @@
 
 {% block content %}
 <div class="panel">
-    <span class="eyebrow">Resultado</span>
+    <span class="eyebrow">Resultado IA</span>
     <h1>{{ title }}</h1>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Causa probable</th>
-                <th>Probabilidad</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in probabilidades %}
-            <tr>
-                <td>{{ item.causa }}</td>
-                <td>{{ item.valor }}</td>
-            </tr>
+    <p class="subtitle">
+        Riesgo:
+        <span class="status {% if analisis.nivel_riesgo == 'NO_MOVER_GRUA' %}danger{% elif analisis.nivel_riesgo == 'PRECAUCION' %}warning{% endif %}">
+            {{ analisis.get_nivel_riesgo_display }}
+        </span>
+        · Confianza de transcripción: {{ analisis.transcripcion_confianza|floatformat:0 }}%
+    </p>
+
+    <div class="detail-grid">
+        <div class="card">
+            <h2>Síntomas normalizados</h2>
+            <table class="table">
+                <thead><tr><th>Código</th><th>Componente</th><th>Síntoma</th><th>Gravedad</th></tr></thead>
+                <tbody>
+                    {% for sintoma in analisis.sintomas_normalizados %}
+                        <tr>
+                            <td>{{ sintoma.codigo }}</td>
+                            <td>{{ sintoma.componente }}</td>
+                            <td>{{ sintoma.sintoma }}</td>
+                            <td>{{ sintoma.gravedad }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="4">Sin síntomas normalizados.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>Causas probables</h2>
+            {% for causa in analisis.causas_probables %}
+                <div class="result" style="margin-bottom: 12px;">
+                    <p><strong>{{ causa.ranking }}. {{ causa.causa }}</strong></p>
+                    <p>Probabilidad: {{ causa.probabilidad }}%</p>
+                </div>
+            {% empty %}
+                <p class="empty">Sin causas calculadas.</p>
             {% endfor %}
-        </tbody>
-    </table>
+        </div>
+    </div>
+
+    <div class="panel" style="margin-top: 20px;">
+        <h2>Pruebas de taller sugeridas</h2>
+        <table class="table">
+            <thead><tr><th>Prueba</th><th>Procedimiento</th><th>Valor esperado</th></tr></thead>
+            <tbody>
+                {% for prueba in analisis.pruebas_taller_sugeridas %}
+                    <tr>
+                        <td>{{ prueba.prueba }}</td>
+                        <td>{{ prueba.procedimiento }}</td>
+                        <td>{{ prueba.valor_esperado }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="3">Sin pruebas sugeridas.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="button-row">
+        <a class="btn primary" href="{% url 'orden_detalle' orden.pk %}">Volver a la orden</a>
+        <a class="btn secondary" href="{% url 'analizar_sintoma' orden.pk %}">Nuevo análisis</a>
+    </div>
 </div>
 {% endblock %}

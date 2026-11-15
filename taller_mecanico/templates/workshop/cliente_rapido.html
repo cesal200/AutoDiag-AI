@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="panel" style="max-width: 680px; margin: 0 auto;">
+    <span class="eyebrow">Clientes</span>
+    <h1>{{ title }}</h1>
+    <p class="subtitle">Crea una cuenta de cliente para asociarle órdenes. El cliente podrá usar el enlace de seguimiento sin necesidad de este usuario.</p>
+
+    {% if form.non_field_errors %}
+        <div class="message error" style="margin-top: 16px;">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <form method="post" style="margin-top: 20px;">
+        {% csrf_token %}
+        <div class="form-grid">
+            {% for field in form %}
+                <div class="field">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}<p class="help">{{ field.help_text|safe }}</p>{% endif %}
+                    {% for error in field.errors %}<p class="errorlist">{{ error }}</p>{% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+        <div class="button-row">
+            <button class="btn primary" type="submit">Crear cliente</button>
+            <a class="btn secondary" href="{% url 'orden_nueva' %}">Volver a nueva orden</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

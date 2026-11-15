@@ -41,8 +41,6 @@ The system SHALL suggest specific technical tests or inspections to validate dia
 - **WHEN** AI completes cause analysis
 - **THEN** system returns pruebas_taller_sugeridas with test description, procedure, and expected values
 
-## REPORT-DISTRIBUTION Requirements (continued)
-
 ### Requirement: AI Output JSON Schema
 The system SHALL output AI analysis results in JSON format with exact structure: {sintomas_normalizados, causas_probables[], nivel_riesgo, pruebas_taller_sugeridas}.
 

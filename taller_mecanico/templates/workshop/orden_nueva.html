@@ -8,27 +8,55 @@
     <h1>{{ title }}</h1>
     <p class="subtitle">{{ subtitle }}</p>
 
-    <form>
-        <div class="field">
-            <label for="cliente">Cliente</label>
-            <input id="cliente" type="text" placeholder="Nombre del cliente" value="Ana García" />
-        </div>
-        <div class="field">
-            <label for="vehiculo">Vehículo</label>
-            <input id="vehiculo" type="text" placeholder="Marca, modelo y año" value="Toyota Corolla 2021" />
-        </div>
-        <div class="field">
-            <label for="placa">Placa</label>
-            <input id="placa" type="text" placeholder="ABC-1234" value="ABC-1234" />
-        </div>
-        <div class="field">
-            <label for="sintoma">Síntoma reportado</label>
-            <textarea id="sintoma" placeholder="Describe el problema del cliente">Vibración al acelerar y luz de motor encendida</textarea>
+    {% if form.non_field_errors %}
+        <div class="message error" style="margin-top: 16px;">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <form method="post" style="margin-top: 20px;">
+        {% csrf_token %}
+        <div class="form-grid">
+            {% for field in form %}
+                <div class="field">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}<p class="help">{{ field.help_text|safe }}</p>{% endif %}
+                    {% for error in field.errors %}<p class="errorlist">{{ error }}</p>{% endfor %}
+                </div>
+            {% endfor %}
         </div>
         <div class="button-row">
-            <button class="btn primary" type="button">Guardar orden</button>
-            <button class="btn secondary" type="button">Analizar con IA</button>
+            <button class="btn primary" type="submit">Guardar orden</button>
+            <a class="btn secondary" href="{% url 'vehiculo_nueva' %}">Registrar vehículo primero</a>
+            <a class="btn secondary" href="{% url 'orden_lista' %}">Volver a órdenes</a>
         </div>
     </form>
 </div>
+
+{% if es_admin_operativo and cliente_rapido_form %}
+<div class="panel" style="margin-top: 20px;">
+    <h2>Cliente walk-in sin cuenta</h2>
+    <p class="subtitle">
+        Si el cliente no está registrado, puedes dejar la orden sin cuenta e indicar su nombre arriba.
+        También puedes crearle una cuenta rápida ahora.
+    </p>
+    <form method="post" style="margin-top: 16px;">
+        {% csrf_token %}
+        <div class="form-grid">
+            {% for field in cliente_rapido_form %}
+                <div class="field">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}<p class="help">{{ field.help_text|safe }}</p>{% endif %}
+                    {% for error in field.errors %}<p class="errorlist">{{ error }}</p>{% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+        <div class="button-row">
+            <button class="btn secondary" type="submit" name="crear_cliente_rapido" value="1">
+                Crear cliente y volver a la orden
+            </button>
+        </div>
+    </form>
+</div>
+{% endif %}
 {% endblock %}

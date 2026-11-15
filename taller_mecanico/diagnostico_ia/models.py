@@ -11,10 +11,11 @@ class AnalisisSintoma(models.Model):
     ]
     
     orden = models.ForeignKey('workshop.OrdenFalla', on_delete=models.CASCADE, related_name='analisis_ia', verbose_name='Orden')
-    sintomas_normalizados = models.TextField('Síntomas Normalizados', help_text='Descripción estandarizada de los síntomas')
-    causas_probables = models.JSONField('Causas Probables', help_text='Lista de causas con probabilidades')
+    sintomas_normalizados = models.JSONField('Síntomas Normalizados', default=list, help_text='Descripción estandarizada de los síntomas')
+    causas_probables = models.JSONField('Causas Probables', default=list, help_text='Lista de causas con probabilidades')
     nivel_riesgo = models.CharField('Nivel de Riesgo', max_length=20, choices=TIPO_RIESGO_CHOICES)
-    pruebas_taller_sugeridas = models.TextField('Pruebas de Taller Sugeridas', help_text='Procedimientos y valores esperados')
+    pruebas_taller_sugeridas = models.JSONField('Pruebas de Taller Sugeridas', default=list, help_text='Procedimientos y valores esperados')
+    transcripcion_confianza = models.FloatField('Confianza de Transcripción', default=0.0)
     creado_en = models.DateTimeField('Creado Automáticamente', auto_now_add=True)
     
     class Meta:

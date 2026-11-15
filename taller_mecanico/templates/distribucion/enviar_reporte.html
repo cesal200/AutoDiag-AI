@@ -6,13 +6,33 @@
 <div class="panel">
     <span class="eyebrow">Entrega</span>
     <h1>{{ title }}</h1>
+    <p class="subtitle">Orden {{ orden.codigo_orden }} · {{ orden.vehiculo }}</p>
+
     <div class="result">
-        <p><strong>Orden:</strong> #{{ orden_id }}</p>
-        <p>{{ estado }}</p>
+        <p><strong>{{ resultado.mensaje }}</strong></p>
+        {% if resultado.omitido %}
+            <p>No se realizaron envíos automáticos.</p>
+        {% endif %}
+        {% if resultado.resultados %}
+            <table class="table">
+                <thead><tr><th>Canal</th><th>Resultado</th><th>Detalle</th></tr></thead>
+                <tbody>
+                    {% for item in resultado.resultados %}
+                        <tr>
+                            <td>{{ item.canal }}</td>
+                            <td>{% if item.ok %}<span class="status">Enviado</span>{% else %}<span class="status danger">Fallido</span>{% endif %}</td>
+                            <td>{{ item.error|default:"—" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
     </div>
+
     <div class="button-row">
-        <a class="btn primary" href="/workshop/orden/lista/">Volver a la lista</a>
-        <a class="btn secondary" href="/workshop/orden/{{ orden_id }}/">Ver detalle</a>
+        <a class="btn primary" href="{% url 'descargar_pdf' orden.pk %}">Descargar PDF localmente</a>
+        <a class="btn secondary" href="{% url 'orden_detalle' orden.pk %}">Volver a la orden</a>
+        <a class="btn secondary" href="{% url 'configurar_distribucion' orden.pk %}">Cambiar configuración</a>
     </div>
 </div>
 {% endblock %}

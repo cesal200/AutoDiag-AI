@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <span class="eyebrow">Seguimiento público</span>
+    <h1>{{ orden.codigo_orden }}</h1>
+    <p class="subtitle">
+        Estado actual:
+        <span class="status {% if orden.estado == 'ESPERA_REPUESTO' %}warning{% elif orden.estado == 'PRE_DIAGNOSTICO' %}danger{% endif %}">
+            {{ orden.get_estado_display }}
+        </span>
+    </p>
+
+    <div class="kv">
+        <span>Cliente</span><strong>{{ orden.cliente_efectivo }}</strong>
+        <span>Vehículo</span><strong>{{ orden.vehiculo }}</strong>
+        <span>Taller</span><strong>{{ orden.taller }}</strong>
+        <span>Ingreso</span><strong>{{ orden.creado_en|date:'d/m/Y H:i' }}</strong>
+        <span>Última actualización</span><strong>{{ orden.actualizado_en|date:'d/m/Y H:i' }}</strong>
+    </div>
+</div>
+
+<div class="panel" style="margin-top: 20px;">
+    <h2>Presupuesto</h2>
+    {% if orden.items_presupuesto.all %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Tipo</th>
+                    <th>Descripción</th>
+                    <th>Cant.</th>
+                    <th>Subtotal</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in orden.items_presupuesto.all %}
+                    <tr>
+                        <td>{{ item.get_tipo_display }}</td>
+                        <td>{{ item.descripcion }}</td>
+                        <td>{{ item.cantidad }}</td>
+                        <td>${{ item.subtotal|floatformat:2 }}</td>
+                        <td>{% if item.aprobado_cliente %}Aprobado{% else %}Pendiente{% endif %}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <p class="subtitle" style="margin-top: 12px;">Total: <strong>${{ total_presupuesto|floatformat:2 }}</strong></p>
+    {% else %}
+        <p class="empty">El presupuesto todavía no está disponible.</p>
+    {% endif %}
+</div>
+{% endblock %}

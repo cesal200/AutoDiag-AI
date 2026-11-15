@@ -6,15 +6,89 @@
 <div class="panel">
     <span class="eyebrow">Reporte</span>
     <h1>{{ title }}</h1>
-    <div class="result">
-        <p><strong>Orden:</strong> #{{ orden_id }}</p>
-        <p><strong>Cliente:</strong> {{ cliente }}</p>
-        <p><strong>Fecha:</strong> {{ fecha }}</p>
-        <p>El documento PDF ha sido preparado con el formato del taller y está listo para distribuir por Telegram o correo electrónico.</p>
+    <p class="subtitle">Vista previa del informe que se entregará al cliente.</p>
+
+    <div class="detail-grid">
+        <div class="card">
+            <h2>Orden</h2>
+            <div class="kv">
+                <span>Ticket</span><strong>{{ orden.ticket }}</strong>
+                <span>Código</span><strong>{{ orden.codigo_orden }}</strong>
+                <span>Cliente</span><strong>{{ orden.cliente_efectivo }}</strong>
+                <span>Vehículo</span><strong>{{ orden.vehiculo }}</strong>
+                <span>Estado</span><strong>{{ orden.get_estado_display }}</strong>
+                <span>Kilometraje</span><strong>{{ orden.kilometraje_ingreso }} km</strong>
+                <span>Ingreso</span><strong>{{ orden.creado_en|date:'d/m/Y H:i' }}</strong>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Diagnóstico IA</h2>
+            {% if analisis %}
+                <p><strong>Riesgo:</strong> {{ analisis.get_nivel_riesgo_display }}</p>
+                <p><strong>Causas probables:</strong></p>
+                <ul>
+                    {% for causa in analisis.causas_probables %}
+                        <li>{{ causa.ranking }}. {{ causa.causa }} — {{ causa.probabilidad }}%</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="empty">Sin análisis IA. El reporte se generará con los datos disponibles.</p>
+            {% endif %}
+        </div>
     </div>
+
+    <h2 style="margin-top: 24px;">Presupuesto</h2>
+    {% if orden.items_presupuesto.all %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Tipo</th>
+                    <th>Descripción</th>
+                    <th>Cant.</th>
+                    <th>Precio</th>
+                    <th>Subtotal</th>
+                    <th>Aprobado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in orden.items_presupuesto.all %}
+                    <tr>
+                        <td>{{ item.get_tipo_display }}</td>
+                        <td>{{ item.descripcion }}</td>
+                        <td>{{ item.cantidad }}</td>
+                        <td>${{ item.precio_unitario|floatformat:2 }}</td>
+                        <td>${{ item.subtotal|floatformat:2 }}</td>
+                        <td>{% if item.aprobado_cliente %}Sí{% else %}No{% endif %}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <p class="subtitle" style="margin-top: 12px;">Total: <strong>${{ total_presupuesto|floatformat:2 }}</strong></p>
+    {% else %}
+        <p class="empty">Sin ítems de presupuesto.</p>
+    {% endif %}
+
+    <h2 style="margin-top: 24px;">Evidencias</h2>
+    {% if orden.evidencias.all %}
+        <ul>
+            {% for evidencia in orden.evidencias.all %}
+                <li>
+                    {{ evidencia.get_nivel_riesgo_display }}
+                    {% if evidencia.narrativa_cliente %} · {{ evidencia.narrativa_cliente }}{% endif %}
+                    {% if evidencia.archivo_audio %} · <a href="{{ evidencia.archivo_audio.url }}">Audio</a>{% endif %}
+                    {% if evidencia.imagen %} · <a href="{{ evidencia.imagen.url }}">Imagen</a>{% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="empty">Sin evidencias registradas.</p>
+    {% endif %}
+
     <div class="button-row">
-        <a class="btn primary" href="/api/distribucion/enviar/{{ orden_id }}/">Enviar reporte</a>
-        <a class="btn secondary" href="/workshop/orden/lista/">Volver a órdenes</a>
+        <a class="btn primary" href="{% url 'descargar_pdf' orden.pk %}">Descargar PDF</a>
+        <a class="btn secondary" href="{% url 'orden_detalle' orden.pk %}">Volver a la orden</a>
+        <a class="btn secondary" href="{% url 'orden_lista' %}">Volver a órdenes</a>
     </div>
 </div>
 {% endblock %}

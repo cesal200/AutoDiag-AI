@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <div>
+        <span class="eyebrow">Administración del taller</span>
+        <h1>Panel operativo</h1>
+        <p class="subtitle">Controla órdenes, asigna mecánicos y da seguimiento al flujo del taller.</p>
+        <div class="button-row">
+            <a class="btn primary" href="{% url 'orden_nueva' %}">Nueva orden</a>
+            <a class="btn secondary" href="{% url 'cliente_rapido' %}">Crear cliente rápido</a>
+            <a class="btn secondary" href="/admin/">Django admin</a>
+        </div>
+    </div>
+    <div class="panel">
+        <span class="badge">Vista administrador / asesor</span>
+        <ul style="margin: 18px 0 0; padding-left: 18px; line-height: 1.8;">
+            <li>Órdenes de clientes registrados y walk-in</li>
+            <li>Asignación de mecánicos</li>
+            <li>Seguimiento por enlace público</li>
+            <li>Gestión completa en Django admin</li>
+        </ul>
+    </div>
+</div>
+
+<div class="metrics">
+    <div class="metric"><span>órdenes totales</span><strong>{{ total_ordenes }}</strong></div>
+    <div class="metric"><span>activas</span><strong>{{ ordenes_activas }}</strong></div>
+    <div class="metric"><span>entregadas</span><strong>{{ ordenes_entregadas }}</strong></div>
+</div>
+
+<div class="grid">
+    <div class="card">
+        <h2>Estado de las órdenes</h2>
+        <ul>
+            {% for etiqueta, total in conteo_estados %}
+                <li>{{ etiqueta }}: <strong>{{ total }}</strong></li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="card">
+        <h2>Resumen del taller</h2>
+        <ul>
+            <li>Órdenes sin mecánico: <strong>{{ ordenes_sin_mecanico }}</strong></li>
+            <li>Mecánicos registrados: <strong>{{ tecnicos }}</strong></li>
+            <li>Portal público por token activo</li>
+            <li>Alta de clientes walk-in disponible</li>
+        </ul>
+    </div>
+</div>
+
+<div class="panel" style="margin-top: 20px;">
+    <h2>Órdenes recientes</h2>
+    {% if ordenes_recientes %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Cliente</th>
+                    <th>Vehículo</th>
+                    <th>Estado</th>
+                    <th>Mecánico</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for orden in ordenes_recientes %}
+                    <tr>
+                        <td>{{ orden.codigo_orden }}</td>
+                        <td>{{ orden.cliente_efectivo }}{% if orden.es_walkin %} <span class="status warning">walk-in</span>{% endif %}</td>
+                        <td>{{ orden.vehiculo }}</td>
+                        <td>{{ orden.get_estado_display }}</td>
+                        <td>{% if orden.mecanico_asignado %}{{ orden.mecanico_asignado.get_username }}{% else %}—{% endif %}</td>
+                        <td><a href="{% url 'orden_detalle' orden.pk %}">Abrir</a></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty">Todavía no hay órdenes registradas.</p>
+    {% endif %}
+</div>
+{% endblock %}

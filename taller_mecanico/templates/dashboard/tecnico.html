@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <div>
+        <span class="eyebrow">Técnico</span>
+        <h1>Panel del técnico</h1>
+        <p class="subtitle">Estas son las órdenes que tienes asignadas. Actualiza el estado y registra el avance del trabajo.</p>
+        <div class="button-row">
+            <a class="btn primary" href="{% url 'orden_lista' %}">Ver mis órdenes</a>
+        </div>
+    </div>
+    <div class="panel">
+        <span class="badge">Mecánico</span>
+        <ul style="margin: 18px 0 0; padding-left: 18px; line-height: 1.8;">
+            <li>Órdenes asignadas a tu usuario</li>
+            <li>Cambio de estado del flujo</li>
+            <li>Registro de evidencias</li>
+            <li>Ítems de presupuesto</li>
+        </ul>
+    </div>
+</div>
+
+<div class="metrics">
+    <div class="metric"><span>asignadas</span><strong>{{ total_ordenes }}</strong></div>
+    <div class="metric"><span>activas</span><strong>{{ ordenes_activas }}</strong></div>
+    <div class="metric"><span>entregadas</span><strong>{{ ordenes_entregadas }}</strong></div>
+</div>
+
+<div class="panel" style="margin-top: 20px;">
+    <h2>Órdenes asignadas</h2>
+    {% if ordenes %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Cliente</th>
+                    <th>Vehículo</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for orden in ordenes %}
+                    <tr>
+                        <td>{{ orden.codigo_orden }}</td>
+                        <td>{{ orden.cliente_efectivo }}</td>
+                        <td>{{ orden.vehiculo }}</td>
+                        <td><span class="status">{{ orden.get_estado_display }}</span></td>
+                        <td><a href="{% url 'orden_detalle' orden.pk %}">Trabajar</a></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty">No tienes órdenes asignadas por el momento.</p>
+    {% endif %}
+</div>
+{% endblock %}

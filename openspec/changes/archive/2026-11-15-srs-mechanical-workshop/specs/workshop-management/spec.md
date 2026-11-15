@@ -47,19 +47,3 @@ The system SHALL generate PDF workshop reports using xhtml2pdf rendering of HTML
 #### Scenario: PDF generation completion
 - **WHEN** user requests PDF report for completed order
 - **THEN** system renders template and generates downloadable PDF in under 30 seconds
-
-## REPORT-DISTRIBUTION Requirements
-
-### Requirement: Telegram Report Distribution
-The system SHALL deliver PDF reports via Telegram Bot API with configurable chat targeting.
-
-#### Scenario: Telegram report send
-- **WHEN** PDF report is ready for distribution
-- **THEN** system sends document via Telegram bot to configured chat ID
-
-### Requirement: Email Report Distribution
-The system SHALL deliver PDF reports via SMTP email with order summary and attachment.
-
-#### Scenario: Email report send
-- **WHEN** PDF report is ready for distribution
-- **THEN** system sends email with PDF attachment and order summary to configured recipient

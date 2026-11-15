@@ -6,22 +6,29 @@
 <div class="panel">
     <span class="eyebrow">Distribución</span>
     <h1>{{ title }}</h1>
-    <form>
-        <div class="field">
-            <label for="canal">Canal de entrega</label>
-            <select id="canal">
-                {% for canal in canales %}
-                <option>{{ canal }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="field">
-            <label for="destino">Destino</label>
-            <input id="destino" type="text" value="cliente@taller.com" />
+    <p class="subtitle">
+        Orden {{ orden.codigo_orden }} · {{ orden.vehiculo }} · {{ orden.cliente_efectivo }}
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="message error">{{ form.non_field_errors }}</div>
+        {% endif %}
+        <div class="form-grid">
+            {% for field in form %}
+                <div class="field">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}<p class="help">{{ field.help_text|safe }}</p>{% endif %}
+                    {% for error in field.errors %}<p class="errorlist">{{ error }}</p>{% endfor %}
+                </div>
+            {% endfor %}
         </div>
         <div class="button-row">
-            <button class="btn primary" type="button">Guardar configuración</button>
-            <a class="btn secondary" href="/api/distribucion/enviar/{{ orden_id }}/">Enviar</a>
+            <button class="btn primary" type="submit">Guardar configuración</button>
+            <a class="btn secondary" href="{% url 'orden_detalle' orden.pk %}">Volver a la orden</a>
+            <a class="btn secondary" href="{% url 'descargar_pdf' orden.pk %}">Descargar PDF</a>
         </div>
     </form>
 </div>
