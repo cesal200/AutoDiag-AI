@@ -142,6 +142,71 @@
             margin: 2px 0;
         }
 
+        .unread-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 22px;
+            height: 22px;
+            margin-left: 4px;
+            padding: 0 7px;
+            border-radius: 999px;
+            background: #ef4444;
+            color: #fff;
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-decoration: none;
+        }
+
+        .order-layout {
+            display: grid;
+            grid-template-columns: 220px minmax(0, 1fr);
+            gap: 20px;
+            align-items: start;
+        }
+
+        .order-sidebar {
+            position: sticky;
+            top: 20px;
+            display: grid;
+            gap: 8px;
+        }
+
+        .order-tab {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: rgba(148, 163, 184, 0.08);
+            color: #dbeafe;
+            padding: 12px 14px;
+            text-align: left;
+            cursor: pointer;
+            font: inherit;
+        }
+
+        .order-tab:hover,
+        .order-tab.active {
+            background: rgba(245, 158, 11, 0.16);
+            border-color: rgba(245, 158, 11, 0.5);
+            color: #fcd34d;
+        }
+
+        .order-section[hidden] { display: none; }
+        .unread-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            margin-left: 6px;
+            padding: 0 6px;
+            border-radius: 999px;
+            background: #ef4444;
+            color: #fff;
+            font-size: 0.72rem;
+            font-weight: 800;
+        }
+
         .nav-user {
             color: var(--muted);
             font-size: 0.85rem;
@@ -500,8 +565,9 @@
         }
 
         @media (max-width: 760px) {
-            .hero, .grid, .metrics, .form-grid, .detail-grid { grid-template-columns: 1fr; }
+            .hero, .grid, .metrics, .form-grid, .detail-grid, .order-layout { grid-template-columns: 1fr; }
             .topbar { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .order-sidebar { position: static; grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
     </style>
 </head>

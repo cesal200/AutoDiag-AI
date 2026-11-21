@@ -6,7 +6,7 @@ from django.utils import timezone
 from datetime import timedelta
 
 from .models import InvitacionPersonal, PerfilUsuario
-from workshop.models import Etiqueta, Taller, Vehiculo, OrdenFalla
+from workshop.models import Etiqueta, MensajeOrden, Taller, Vehiculo, OrdenFalla
 
 
 @override_settings(PASSWORD_HASHERS=['django.contrib.auth.hashers.MD5PasswordHasher'])
@@ -228,6 +228,50 @@ class PersonalTests(TestCase):
         response = self.client.get('/admin/')
 
         self.assertEqual(response.status_code, 404)
+
+    def test_mensaje_recibido_se_marca_leido_al_abrir_orden(self):
+        cliente = User.objects.create_user(
+            'cliente_chat',
+            email='cliente_chat@example.com',
+            password='ClaveSegura123',
+        )
+        mecanico = User.objects.create_user(
+            'mecanico_chat',
+            password='ClaveSegura123',
+        )
+        mecanico.perfil.rol = PerfilUsuario.Rol.MECANICO
+        mecanico.perfil.save(update_fields=['rol'])
+        vehiculo = Vehiculo.objects.create(
+            placa='CHAT-001',
+            marca='Toyota',
+            modelo='Camry',
+            anio=2023,
+            cliente=cliente,
+        )
+        orden = OrdenFalla.objects.create(
+            taller=self.taller,
+            vehiculo=vehiculo,
+            cliente=cliente,
+            mecanico_asignado=mecanico,
+            kilometraje_ingreso=15000,
+        )
+        mensaje = MensajeOrden.objects.create(
+            orden=orden,
+            autor=cliente,
+            contenido='¿Ya revisaron el vehículo?',
+        )
+        self.client.login(username='mecanico_chat', password='ClaveSegura123')
+
+        lista = self.client.get(reverse('orden_lista'))
+        orden_lista = next(item for item in lista.context['ordenes'] if item.pk == orden.pk)
+        self.assertEqual(orden_lista.mensajes_no_leidos, 1)
+
+        detalle = self.client.get(reverse('orden_detalle', args=[orden.pk]))
+        self.assertEqual(detalle.context['mensajes_no_leidos'], 1)
+        chat = self.client.get(reverse('mensajes_orden', args=[orden.pk]))
+        self.assertEqual(chat.status_code, 200)
+        mensaje.refresh_from_db()
+        self.assertTrue(mensaje.leidos_por.filter(pk=mecanico.pk).exists())
 
     def test_admin_edita_datos_y_etiquetas_de_una_orden(self):
         cliente = User.objects.create_user(

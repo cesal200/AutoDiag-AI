@@ -79,6 +79,12 @@ def orden_lista(request):
     elif mecanico.isdigit():
         ordenes = ordenes.filter(mecanico_asignado_id=int(mecanico))
 
+    ordenes = list(ordenes)
+    for orden in ordenes:
+        orden.mensajes_no_leidos = orden.mensajes.exclude(
+            autor=request.user
+        ).exclude(leidos_por=request.user).count()
+
     return render(request, 'workshop/orden_lista.html', {
         'title': 'Órdenes',
         'ordenes': ordenes,
@@ -184,6 +190,9 @@ def orden_detalle(request, orden_id):
     config_distribucion = getattr(orden, 'config_distribucion', None)
     codigos_estado = [codigo for codigo, _ in ESTADO_CHOICES]
     indice_actual = codigos_estado.index(orden.estado)
+    mensajes_no_leidos = orden.mensajes.exclude(
+        autor=request.user
+    ).exclude(leidos_por=request.user).count()
 
     context = {
         'title': f'Orden {orden.codigo_orden}',
@@ -200,6 +209,7 @@ def orden_detalle(request, orden_id):
         'form_evidencia': EvidenciaSintomaForm() if puede_evidenciar else None,
         'mensaje_form': MensajeOrdenForm(),
         'mensajes': orden.mensajes.select_related('autor').all(),
+        'mensajes_no_leidos': mensajes_no_leidos,
         'usuario_id': request.user.id,
         'ultimo_analisis': orden.analisis_ia.first(),
         'config_distribucion': config_distribucion,
@@ -262,6 +272,8 @@ def mensajes_orden(request, orden_id):
     if not puede_ver_orden(request.user, orden):
         raise PermissionDenied
     mensajes = orden.mensajes.select_related('autor').all()
+    for mensaje in mensajes.exclude(autor=request.user).exclude(leidos_por=request.user):
+        mensaje.leidos_por.add(request.user)
     return render(request, 'workshop/_mensajes_orden.html', {
         'mensajes': mensajes,
         'usuario_id': request.user.id,
@@ -281,6 +293,7 @@ def enviar_mensaje_orden(request, orden_id):
         mensaje.orden = orden
         mensaje.autor = request.user
         mensaje.save()
+        mensaje.leidos_por.add(request.user)
         messages.success(request, 'Mensaje enviado al ticket.')
     else:
         messages.error(request, 'Escribe un mensaje antes de enviarlo.')

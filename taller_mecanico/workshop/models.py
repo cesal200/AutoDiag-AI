@@ -273,6 +273,12 @@ class MensajeOrden(models.Model):
     autor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='Autor')
     contenido = models.TextField('Mensaje')
     creado_en = models.DateTimeField('Enviado', auto_now_add=True)
+    leidos_por = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        blank=True,
+        related_name='mensajes_orden_leidos',
+        verbose_name='Leído por',
+    )
 
     class Meta:
         ordering = ('creado_en', 'pk')
