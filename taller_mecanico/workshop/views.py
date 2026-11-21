@@ -468,6 +468,24 @@ def descargar_pdf(request, orden_id):
     return response
 
 
+def descargar_pdf_publico(request, token):
+    orden = get_object_or_404(
+        OrdenFalla.objects.select_related('vehiculo', 'taller').prefetch_related(
+            'items_presupuesto', 'evidencias', 'analisis_ia'
+        ),
+        token_publico=token,
+    )
+    if not orden.token_vigente:
+        raise Http404('Enlace de reporte expirado.')
+
+    pdf = construir_pdf(orden)
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Disposition'] = (
+        f'attachment; filename="reporte-{orden.codigo_orden}.pdf"'
+    )
+    return response
+
+
 def seguimiento_publico(request, token):
     orden = get_object_or_404(
         OrdenFalla.objects.select_related('cliente', 'mecanico_asignado').prefetch_related(

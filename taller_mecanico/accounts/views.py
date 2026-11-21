@@ -11,6 +11,7 @@ from accounts.models import InvitacionPersonal, PerfilUsuario
 from .forms import (
     CrearPersonalForm,
     InvitacionPersonalForm,
+    PerfilClienteForm,
     RegistroClienteForm,
 )
 
@@ -33,6 +34,22 @@ def registro(request):
         return redirect('dashboard')
 
     return render(request, 'accounts/registro.html', {'form': form})
+
+
+@rol_requerido(PerfilUsuario.Rol.CLIENTE)
+def perfil_cliente(request):
+    form = PerfilClienteForm(
+        request.POST or None,
+        user=request.user,
+    )
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Tus datos de contacto se actualizaron.')
+        return redirect('perfil_cliente')
+
+    return render(request, 'accounts/perfil_cliente.html', {
+        'form': form,
+    })
 
 
 @rol_requerido(PerfilUsuario.Rol.ADMIN)

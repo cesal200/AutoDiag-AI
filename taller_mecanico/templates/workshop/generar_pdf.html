@@ -87,6 +87,8 @@
 
     <div class="button-row">
         <a class="btn primary" href="{% url 'descargar_pdf' orden.pk %}">Descargar PDF</a>
+        <a class="btn secondary" href="{% url 'configurar_distribucion' orden.pk %}">Configurar envío por correo / WhatsApp</a>
+        <a class="btn secondary" href="{% url 'abrir_whatsapp' orden.pk %}" target="_blank" rel="noopener">Preparar WhatsApp Web</a>
         <a class="btn secondary" href="{% url 'orden_detalle' orden.pk %}">Volver a la orden</a>
         <a class="btn secondary" href="{% url 'orden_lista' %}">Volver a órdenes</a>
     </div>

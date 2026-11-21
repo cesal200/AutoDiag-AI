@@ -595,6 +595,12 @@
                                 <a href="{% url 'gestionar_usuarios' %}">Usuarios registrados</a>
                             </div>
                         </details>
+                        <details class="nav-group">
+                            <summary class="nav-summary">Administración</summary>
+                            <div class="nav-menu">
+                                <a href="{% url 'configurar_remitente' %}">Contacto y envío de reportes</a>
+                            </div>
+                        </details>
                     {% else %}
                         <a href="{% url 'cliente_rapido' %}">Cliente rápido</a>
                     {% endif %}
@@ -607,6 +613,9 @@
                         </div>
                     </details>
                 {% else %}
+                    {% if rol_actual == 'CLIENTE' %}
+                        <a href="{% url 'perfil_cliente' %}">Mi perfil</a>
+                    {% endif %}
                     <a href="{% url 'orden_lista' %}">Órdenes</a>
                     {% if rol_actual != 'MECANICO' %}
                         <a href="{% url 'vehiculo_nueva' %}">Nuevo vehículo</a>

@@ -36,7 +36,8 @@
                     <h2>Datos de la orden</h2>
                     <div class="kv">
                         <span>Cliente</span><strong>{{ orden.cliente_efectivo }}</strong>
-                        <span>Teléfono</span><strong>{{ orden.telefono_cliente_walkin|default:"—" }}</strong>
+                        <span>Teléfono</span><strong>{% if orden.cliente_id %}{{ orden.cliente.perfil.telefono|default:"—" }}{% else %}{{ orden.telefono_cliente_walkin|default:"—" }}{% endif %}</strong>
+                        {% if orden.cliente_id %}<span>Correo</span><strong>{{ orden.cliente.email|default:"—" }}</strong>{% endif %}
                         <span>Vehículo</span><strong>{{ orden.vehiculo }}</strong>
                         <span>Placa</span><strong>{{ orden.vehiculo.placa }}</strong>
                         <span>Marca / Modelo</span><strong>{{ orden.vehiculo.marca }} {{ orden.vehiculo.modelo }}</strong>
@@ -62,6 +63,7 @@
                         {% endif %}
                         <a class="btn primary" href="{% url 'generar_pdf' orden.pk %}">Ver reporte</a>
                         <a class="btn secondary" href="{% url 'descargar_pdf' orden.pk %}">Descargar PDF</a>
+                        <a class="btn secondary" href="{% url 'abrir_whatsapp' orden.pk %}" target="_blank" rel="noopener">WhatsApp Web</a>
                         <a class="btn secondary" href="{% url 'orden_lista' %}">Volver</a>
                     </div>
 
@@ -267,6 +269,11 @@
                         </form>
                     </div>
                 {% endif %}
+                <div class="button-row">
+                    <a class="btn secondary" href="{% url 'abrir_whatsapp' orden.pk %}" target="_blank" rel="noopener">
+                        Abrir WhatsApp Web
+                    </a>
+                </div>
             </div>
         </section>
     </div>

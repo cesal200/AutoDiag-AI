@@ -4,6 +4,8 @@ from django.db import models
 METODO_DISTRIBUCION_CHOICES = [
     ('TELEGRAM', 'Telegram'),
     ('EMAIL', 'Email'),
+    ('WHATSAPP', 'WhatsApp Web (confirmación manual)'),
+    ('WHATSAPP_EMAIL', 'Correo y WhatsApp Web (confirmación manual)'),
     ('AMBOS', 'Ambos'),
     ('NINGUNO', 'Ninguno'),
 ]
@@ -15,9 +17,10 @@ class ConfiguracionDistribucion(models.Model):
     METODO_CHOICES = METODO_DISTRIBUCION_CHOICES
     
     orden = models.OneToOneField('workshop.OrdenFalla', on_delete=models.CASCADE, related_name='config_distribucion', verbose_name='Orden')
-    metodo = models.CharField('Método de Distribución', max_length=10, choices=METODO_CHOICES, default='TELEGRAM')
+    metodo = models.CharField('Método de Distribución', max_length=20, choices=METODO_CHOICES, default='TELEGRAM')
     chat_telegram_id = models.CharField('ID Chat Telegram', max_length=50, null=True, blank=True)
     email_destino = models.EmailField('Email Destino', max_length=254, null=True, blank=True)
+    telefono_whatsapp = models.CharField('Teléfono WhatsApp', max_length=30, null=True, blank=True)
     creado_en = models.DateTimeField('Creado Automáticamente', auto_now_add=True)
     actualizado_en = models.DateTimeField('Actualizado Automáticamente', auto_now=True)
     
@@ -27,6 +30,30 @@ class ConfiguracionDistribucion(models.Model):
     
     def __str__(self):
         return f'Distribución {self.orden.codigo_orden} - {self.get_metodo_display()}'
+
+
+class ConfiguracionRemitente(models.Model):
+    """Public contact details used when the workshop shares a report."""
+
+    id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
+    telefono_whatsapp = models.CharField(
+        'Teléfono WhatsApp del taller', max_length=30, blank=True
+    )
+    email_remitente = models.EmailField(
+        'Correo remitente de los reportes', blank=True
+    )
+    actualizado_en = models.DateTimeField('Actualizado', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Configuración de remitente'
+        verbose_name_plural = 'Configuración de remitente'
+
+    @classmethod
+    def obtener(cls):
+        return cls.objects.get_or_create(pk=1)[0]
+
+    def __str__(self):
+        return 'Datos de contacto del taller'
 
 
 class EnvioReportes(models.Model):
@@ -41,7 +68,7 @@ class EnvioReportes(models.Model):
     METODO_CHOICES = METODO_DISTRIBUCION_CHOICES
     
     orden = models.ForeignKey('workshop.OrdenFalla', on_delete=models.CASCADE, related_name='logs_envios', verbose_name='Orden')
-    metodo = models.CharField('Método', max_length=10, choices=METODO_CHOICES, default='TELEGRAM')
+    metodo = models.CharField('Método', max_length=20, choices=METODO_CHOICES, default='TELEGRAM')
     estado = models.CharField('Estado', max_length=10, choices=ESTADO_CHOICES, default='PENDIENTE')
     mensaje_error = models.TextField('Mensaje de Error', null=True, blank=True)
     creado_en = models.DateTimeField('Creado Automáticamente', auto_now=True)

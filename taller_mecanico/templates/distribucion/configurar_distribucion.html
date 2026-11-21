@@ -9,6 +9,13 @@
     <p class="subtitle">
         Orden {{ orden.codigo_orden }} · {{ orden.vehiculo }} · {{ orden.cliente_efectivo }}
     </p>
+    <p class="help">Estos datos son el destino del reporte. El teléfono del cliente registrado se propone automáticamente; puedes cambiarlo solo para esta orden.</p>
+
+    <div class="result" style="margin-top: 16px;">
+        <p><strong>Seguimiento público:</strong> {{ orden.ticket }}</p>
+        <p><strong>Presupuesto actual:</strong> ${{ orden.total_presupuesto|floatformat:2 }}</p>
+        <p class="subtitle">El correo se enviará con el PDF adjunto. WhatsApp Web abrirá el mensaje con seguimiento y un enlace seguro para descargar el PDF; tendrás que confirmar el envío desde WhatsApp.</p>
+    </div>
 
     <form method="post">
         {% csrf_token %}
@@ -29,6 +36,7 @@
             <button class="btn primary" type="submit">Guardar configuración</button>
             <a class="btn secondary" href="{% url 'orden_detalle' orden.pk %}">Volver a la orden</a>
             <a class="btn secondary" href="{% url 'descargar_pdf' orden.pk %}">Descargar PDF</a>
+            <a class="btn secondary" href="{% url 'abrir_whatsapp' orden.pk %}" target="_blank" rel="noopener">Preparar WhatsApp Web</a>
         </div>
     </form>
 </div>

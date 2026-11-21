@@ -13,6 +13,16 @@
         {% if resultado.omitido %}
             <p>No se realizaron envíos automáticos.</p>
         {% endif %}
+        {% if resultado.requiere_accion %}
+            {% if resultado.correo_enviado %}
+                <p>El PDF se envió adjunto al correo. WhatsApp Web requiere que confirmes el envío y permite descargar el PDF desde el enlace seguro.</p>
+            {% else %}
+                <p>El correo no se pudo enviar. WhatsApp Web requiere que confirmes el envío y permite descargar el PDF desde el enlace seguro.</p>
+            {% endif %}
+            <a class="btn primary" href="{{ resultado.url_whatsapp }}" target="_blank" rel="noopener">
+                Abrir WhatsApp Web
+            </a>
+        {% endif %}
         {% if resultado.resultados %}
             <table class="table">
                 <thead><tr><th>Canal</th><th>Resultado</th><th>Detalle</th></tr></thead>
@@ -20,7 +30,7 @@
                     {% for item in resultado.resultados %}
                         <tr>
                             <td>{{ item.canal }}</td>
-                            <td>{% if item.ok %}<span class="status">Enviado</span>{% else %}<span class="status danger">Fallido</span>{% endif %}</td>
+                            <td>{% if item.ok %}<span class="status">Enviado</span>{% elif item.canal == 'WhatsApp Web' %}<span class="status warning">Pendiente</span>{% else %}<span class="status danger">Fallido</span>{% endif %}</td>
                             <td>{{ item.error|default:"—" }}</td>
                         </tr>
                     {% endfor %}

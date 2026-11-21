@@ -248,7 +248,7 @@ class EditarOrdenForm(forms.ModelForm):
 class ClienteRapidoForm(forms.Form):
     nombre_completo = forms.CharField(label='Nombre completo', max_length=150)
     email = forms.EmailField(label='Correo electrónico')
-    telefono = forms.CharField(label='Teléfono', max_length=30, required=False)
+    telefono = forms.CharField(label='Teléfono', max_length=30)
 
     def clean_email(self):
         email = self.cleaned_data['email'].strip().lower()

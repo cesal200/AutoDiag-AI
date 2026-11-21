@@ -25,6 +25,7 @@ class PerfilUsuarioTests(TestCase):
             'email': 'cliente_nuevo@example.com',
             'first_name': 'Nuevo',
             'last_name': 'Cliente',
+            'telefono': '8095550100',
             'rol': 'ADMIN',
             'password1': 'ClaveSegura123',
             'password2': 'ClaveSegura123',
@@ -32,6 +33,45 @@ class PerfilUsuarioTests(TestCase):
         self.assertRedirects(response, reverse('dashboard'), fetch_redirect_response=False)
         user = User.objects.get(username='cliente_nuevo')
         self.assertEqual(user.perfil.rol, PerfilUsuario.Rol.CLIENTE)
+        self.assertEqual(user.perfil.telefono, '8095550100')
+
+    def test_registro_cliente_requiere_telefono(self):
+        response = self.client.post(reverse('registro'), {
+            'username': 'cliente_sin_telefono',
+            'email': 'cliente_sin_telefono@example.com',
+            'first_name': 'Cliente',
+            'password1': 'ClaveSegura123',
+            'password2': 'ClaveSegura123',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Indica un teléfono de contacto')
+        self.assertFalse(User.objects.filter(username='cliente_sin_telefono').exists())
+
+    def test_cliente_actualiza_datos_de_contacto_desde_su_perfil(self):
+        cliente = User.objects.create_user(
+            'cliente_perfil',
+            email='antes@example.com',
+            password='ClaveSegura123',
+        )
+        self.client.force_login(cliente)
+
+        response = self.client.post(reverse('perfil_cliente'), {
+            'email': 'nuevo@example.com',
+            'first_name': 'Ana',
+            'last_name': 'Cliente',
+            'telefono': '8095550101',
+        })
+
+        self.assertRedirects(
+            response,
+            reverse('perfil_cliente'),
+            fetch_redirect_response=False,
+        )
+        cliente.refresh_from_db()
+        self.assertEqual(cliente.email, 'nuevo@example.com')
+        self.assertEqual(cliente.first_name, 'Ana')
+        self.assertEqual(cliente.perfil.telefono, '8095550101')
 
     def test_login_redirige_al_panel(self):
         User.objects.create_user('cliente', password='ClaveSegura123')
