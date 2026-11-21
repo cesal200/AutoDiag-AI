@@ -4,6 +4,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import redirect, render
 
 
+
 def register(request):
     if request.user.is_authenticated:
         return redirect('home')
@@ -23,6 +24,6 @@ def register(request):
 @login_required
 def home(request):
     return render(request, 'home.html', {
-        'title': 'AutoDiag AI',
-        'summary': 'Panel principal del taller mecánico con prediagnóstico inteligente.',
+        'title': 'Inicio',
+        'summary': 'Servicios inteligentes para recepción, diagnóstico y seguimiento del taller.',
     })
