@@ -9,6 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('workshop', '0001_initial'),
+        ('workshop', '0002_taller_vehiculo_ticket'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

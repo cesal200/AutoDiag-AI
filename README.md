@@ -165,31 +165,15 @@ pip install -r requirements.txt
 python -m django --version
 ```
 
-<<<<<<< HEAD
 5. Configurar variables de entorno y migrar:
 
 ```bash
 cp .env.example .env
-=======
-5. Aplicar las migraciones:
-
-```bash
->>>>>>> feature/acceso
 python manage.py migrate
 python manage.py seed_demo
 ```
 
-<<<<<<< HEAD
 Edite `.env` con la clave de Django y, opcionalmente, `OPENAI_API_KEY`, Telegram y SMTP. El motor local funciona sin claves externas.
-=======
-6. Crear el usuario para iniciar sesión:
-
-```bash
-python manage.py createsuperuser
-```
-
-El público puede crear una cuenta en `/registro/` o iniciar sesión en `/login/`. Al registrarse, la sesión se inicia automáticamente y la cuenta queda como cliente, sin acceso a las herramientas de gestión. Para habilitar el panel administrativo, crea un superusuario con el comando anterior o marca una cuenta de confianza como personal (`is_staff`) desde `/admin/`; no hay credenciales predeterminadas.
->>>>>>> feature/acceso
 
 ## Ejecución de la aplicación
 
@@ -215,7 +199,6 @@ start_django.bat
 El proyecto cuenta con rutas principales para acceder a los módulos clave:
 
 ```text
-<<<<<<< HEAD
 /                                  -> Inicio del sistema
 /accounts/login/                   -> Login
 /registro/                         -> Registro público de clientes
@@ -233,17 +216,6 @@ El proyecto cuenta con rutas principales para acceder a los módulos clave:
 /workshop/pdf/<id>/descargar/      -> Descarga del PDF
 /api/diagnostico/analizar/<id>/    -> Diagnóstico IA
 /api/diagnostico/resultado/<id>/   -> Resultado del análisis
-=======
-/                     -> Inicio del sistema
-/workshop/cliente/orden/nueva/ -> Crear orden como cliente
-/workshop/cliente/ordenes/ -> Órdenes activas del cliente
-/workshop/cliente/ordenes/<id>/ -> Ticket y chat del cliente
-/workshop/orden/nueva/    -> Crear nueva orden
-/workshop/orden/lista/    -> Lista de órdenes
-/workshop/orden/<id>/     -> Detalle, chat, estado y mecánico asignado (personal)
-/api/diagnostico/analizar/<id>/   -> Diagnóstico IA
-/api/diagnostico/resultado/<id>/  -> Resultado del análisis
->>>>>>> feature/acceso
 /api/distribucion/configurar/<id>/ -> Configuración de entrega
 /api/distribucion/enviar/<id>/     -> Envío de reporte
 ```
@@ -299,20 +271,11 @@ Este proyecto incluye documentación complementaria en:
 
 ## Siguiente evolución recomendada
 
-<<<<<<< HEAD
 - Añadir aislamiento multi-taller por usuario y permisos por taller.
 - Incorporar notificaciones en tiempo real y auditoría de cambios de estado.
 - Añadir flujo de invitación o restablecimiento de contraseña para clientes rápidos.
 - Endurecer la validación de archivos y almacenar media en un servicio externo.
 - Medir precisión real de transcripción y visión con un conjunto de pruebas del taller.
-=======
-- Conectar modelos reales de base de datos.
-- Definir permisos y roles específicos para los distintos usuarios.
-- Integrar un modelo de IA real para diagnóstico multimodal.
-- Generar PDF desde información real almacenada.
-- Añadir envío real por Telegram y SMTP.
-- Añadir panel administrativo con CRUD completo.
->>>>>>> feature/acceso
 
 ## Licencia
 

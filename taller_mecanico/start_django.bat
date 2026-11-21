@@ -18,12 +18,22 @@ if exist "%~dp0..\.venv\Scripts\activate.bat" (
 ) else (
     echo No se encuentra entorno virtual.
     echo Instalando dependencias...
-    pip install -r requirements.txt 2>nul
+    python -m pip install -r requirements.txt
+    if errorlevel 1 (
+        echo No se pudieron instalar las dependencias.
+        pause
+        exit /b 1
+    )
 )
 
 echo.
 echo Aplicando migraciones pendientes...
-python manage.py migrate --noinput 2>nul
+python manage.py migrate --noinput
+if errorlevel 1 (
+    echo No se pudieron aplicar las migraciones. Revisa el error anterior.
+    pause
+    exit /b 1
+)
 
 echo.
 echo Levantando servidor de desarrollo...
@@ -33,11 +43,7 @@ echo   Acceso al sistema:
 echo   - Web: http://127.0.0.1:8000
 echo   - Inicio de sesion: http://127.0.0.1:8000/login/
 echo   - Admin: http://127.0.0.1:8000/admin/
-<<<<<<< HEAD
 echo   - Usuario demo (si se cargo seed_demo): admin / demo12345
-=======
-echo   - Si aun no tienes usuario, ejecuta setup.bat
->>>>>>> feature/acceso
 echo ==========================================
 echo.
 

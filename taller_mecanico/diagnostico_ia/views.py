@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
@@ -11,20 +10,10 @@ from workshop.models import OrdenFalla
 
 from .models import AnalisisSintoma
 from .services import procesar_orden
-=======
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
->>>>>>> feature/acceso
 
 from taller_mecanico.permissions import staff_required
 
-<<<<<<< HEAD
 @login_required
-=======
-
-@login_required
-@staff_required
->>>>>>> feature/acceso
 def analizar_sintoma(request, orden_id):
     orden = get_object_or_404(
         OrdenFalla.objects.select_related('vehiculo', 'cliente').prefetch_related(
@@ -52,10 +41,6 @@ def analizar_sintoma(request, orden_id):
 
 
 @login_required
-<<<<<<< HEAD
-=======
-@staff_required
->>>>>>> feature/acceso
 def resultado_analisis(request, analisis_id):
     analisis = get_object_or_404(
         AnalisisSintoma.objects.select_related('orden', 'orden__vehiculo', 'orden__cliente'),
