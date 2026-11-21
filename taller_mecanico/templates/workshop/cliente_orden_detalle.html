@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block title %}Ticket {{ orden.codigo_orden }} | AutoDiag AI{% endblock %}
+
+{% block content %}
+<section class="card">
+    <span class="eyebrow">Ticket de servicio</span>
+    <h1>{{ orden.codigo_orden }}</h1>
+    <p class="subtitle">Vehículo: <strong>{{ orden.vehiculo }}</strong></p>
+    <p class="subtitle">Placa: <strong>{{ orden.placa|default:'No indicada' }}</strong></p>
+    <p class="subtitle">Estado: <strong>{{ orden.get_estado_display }}</strong></p>
+    <p class="subtitle">Mecánico: <strong>{{ orden.mecanico_asignado|default:'Aún no asignado' }}</strong></p>
+    <p class="subtitle">Síntoma reportado: {{ sintoma }}</p>
+    <div class="button-row">
+        <a class="btn secondary" href="{% url 'cliente_orden_lista' %}">Volver a mis órdenes</a>
+    </div>
+</section>
+{% include 'workshop/_chat.html' %}
+{% endblock %}

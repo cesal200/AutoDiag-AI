@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} | AutoDiag AI{% endblock %}
+
+{% block content %}
+<section class="card">
+    <span class="eyebrow">Seguimiento</span>
+    <h1>{{ title }}</h1>
+    {% if ordenes %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Vehículo</th>
+                <th>Placa</th>
+                <th>Estado</th>
+                <th>Ticket</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for orden in ordenes %}
+            <tr>
+                <td>{{ orden.codigo_orden }}</td>
+                <td>{{ orden.vehiculo }}</td>
+                <td>{{ orden.placa|default:'-' }}</td>
+                <td><span class="status">{{ orden.get_estado_display }}</span></td>
+                <td><a href="{% url 'cliente_orden_detalle' orden.pk %}">Abrir chat</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="subtitle">No tienes órdenes activas por el momento.</p>
+    {% endif %}
+    <div class="button-row">
+        <a class="btn primary" href="{% url 'cliente_orden_nueva' %}">Crear nueva orden</a>
+    </div>
+</section>
+{% endblock %}

@@ -7,6 +7,7 @@
     <span class="eyebrow">Operación</span>
     <h1>{{ title }}</h1>
 
+<<<<<<< HEAD
     <form method="get" class="inline-form">
         <div class="field">
             <label for="q">Buscar</label>
@@ -87,5 +88,33 @@
     {% else %}
         <p class="empty">No hay órdenes para mostrar.</p>
     {% endif %}
+=======
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Cliente</th>
+                <th>Vehículo</th>
+                <th>Estado</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for orden in ordenes %}
+            <tr>
+                <td>{{ orden.codigo_orden }}</td>
+                <td>{{ orden.cliente.username }}</td>
+                <td>{{ orden.vehiculo }}</td>
+                <td><span class="status">{{ orden.get_estado_display }}</span></td>
+                <td><a href="{% url 'orden_detalle' orden.pk %}">Abrir ticket y gestionar</a></td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5">No hay órdenes activas.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+>>>>>>> feature/acceso
 </div>
 {% endblock %}

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
@@ -12,9 +13,20 @@ from workshop.models import OrdenFalla
 from .forms import ConfiguracionDistribucionForm
 from .models import ConfiguracionDistribucion
 from .services import enviar_reporte as ejecutar_envio
+=======
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+>>>>>>> feature/acceso
 
+from taller_mecanico.permissions import staff_required
 
+<<<<<<< HEAD
 @rol_requerido(PerfilUsuario.Rol.ADMIN, PerfilUsuario.Rol.ASESOR)
+=======
+
+@login_required
+@staff_required
+>>>>>>> feature/acceso
 def configurar_distribucion(request, orden_id):
     orden = get_object_or_404(
         OrdenFalla.objects.select_related('cliente', 'vehiculo'), pk=orden_id
@@ -35,7 +47,11 @@ def configurar_distribucion(request, orden_id):
 
 
 @login_required
+<<<<<<< HEAD
 @require_POST
+=======
+@staff_required
+>>>>>>> feature/acceso
 def enviar_reporte(request, orden_id):
     if not es_admin_operativo(request.user):
         raise PermissionDenied

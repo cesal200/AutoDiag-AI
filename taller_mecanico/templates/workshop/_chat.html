@@ -1,0 +1,51 @@
+<section class="card">
+    <h2>Chat del ticket</h2>
+    <p class="subtitle">La conversación se actualiza automáticamente mientras el ticket esté abierto.</p>
+    <div
+        class="chat-messages"
+        data-chat-messages
+        data-refresh-url="{% url 'mensajes_orden' orden.pk %}"
+        aria-live="polite"
+    >
+        {% include 'workshop/_mensajes_orden.html' %}
+    </div>
+    <p class="chat-error" data-chat-error role="alert" hidden>No se pudieron actualizar los mensajes. Comprueba tu conexión e inténtalo de nuevo.</p>
+    <form method="post" action="{% url 'enviar_mensaje_orden' orden.pk %}">
+        {% csrf_token %}
+        <div class="field">
+            <label for="{{ mensaje_form.contenido.id_for_label }}">Mensaje</label>
+            {{ mensaje_form.contenido }}
+            {% for error in mensaje_form.contenido.errors %}
+            <small role="alert">{{ error }}</small>
+            {% endfor %}
+        </div>
+        <button class="btn primary" type="submit">Enviar mensaje</button>
+    </form>
+</section>
+<script>
+    (function () {
+        const chatMessages = document.querySelector('[data-chat-messages]');
+        const chatError = document.querySelector('[data-chat-error]');
+        if (!chatMessages || !chatError) return;
+
+        async function refreshMessages() {
+            try {
+                const response = await fetch(chatMessages.dataset.refreshUrl, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (!response.ok) throw new Error('No se pudieron cargar los mensajes.');
+                const html = await response.text();
+                const wasNearBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < 60;
+                chatMessages.innerHTML = html;
+                if (wasNearBottom) chatMessages.scrollTop = chatMessages.scrollHeight;
+                chatError.hidden = true;
+            } catch (error) {
+                chatError.hidden = false;
+                console.error(error);
+            }
+        }
+
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        window.setInterval(refreshMessages, 5000);
+    })();
+</script>

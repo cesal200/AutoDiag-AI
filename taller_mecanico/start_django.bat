@@ -31,8 +31,13 @@ echo.
 echo ==========================================
 echo   Acceso al sistema:
 echo   - Web: http://127.0.0.1:8000
+echo   - Inicio de sesion: http://127.0.0.1:8000/login/
 echo   - Admin: http://127.0.0.1:8000/admin/
+<<<<<<< HEAD
 echo   - Usuario demo (si se cargo seed_demo): admin / demo12345
+=======
+echo   - Si aun no tienes usuario, ejecuta setup.bat
+>>>>>>> feature/acceso
 echo ==========================================
 echo.
 
