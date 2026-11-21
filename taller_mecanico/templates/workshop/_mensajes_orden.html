@@ -1,0 +1,11 @@
+{% for mensaje in mensajes %}
+<article class="chat-message{% if mensaje.autor_id == usuario_id %} mine{% endif %}">
+    <div class="chat-meta">
+        {{ mensaje.autor.get_full_name|default:mensaje.autor.username }}
+        · {{ mensaje.creado_en|date:'d/m/Y H:i' }}
+    </div>
+    <p>{{ mensaje.contenido|linebreaksbr }}</p>
+</article>
+{% empty %}
+<p class="chat-empty">Aún no hay mensajes. Inicia la conversación sobre este ticket.</p>
+{% endfor %}

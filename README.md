@@ -165,12 +165,19 @@ pip install -r requirements.txt
 python -m django --version
 ```
 
-5. Crear migraciones si el proyecto evoluciona a modelos reales:
+5. Aplicar las migraciones:
 
 ```bash
-python manage.py makemigrations
 python manage.py migrate
 ```
+
+6. Crear el usuario para iniciar sesión:
+
+```bash
+python manage.py createsuperuser
+```
+
+El público puede crear una cuenta en `/registro/` o iniciar sesión en `/login/`. Al registrarse, la sesión se inicia automáticamente y la cuenta queda como cliente, sin acceso a las herramientas de gestión. Para habilitar el panel administrativo, crea un superusuario con el comando anterior o marca una cuenta de confianza como personal (`is_staff`) desde `/admin/`; no hay credenciales predeterminadas.
 
 ## Ejecución de la aplicación
 
@@ -197,9 +204,12 @@ El proyecto cuenta con rutas principales para acceder a los módulos clave:
 
 ```text
 /                     -> Inicio del sistema
+/workshop/cliente/orden/nueva/ -> Crear orden como cliente
+/workshop/cliente/ordenes/ -> Órdenes activas del cliente
+/workshop/cliente/ordenes/<id>/ -> Ticket y chat del cliente
 /workshop/orden/nueva/    -> Crear nueva orden
 /workshop/orden/lista/    -> Lista de órdenes
-/workshop/orden/<id>/     -> Detalle de orden
+/workshop/orden/<id>/     -> Detalle, chat, estado y mecánico asignado (personal)
 /api/diagnostico/analizar/<id>/   -> Diagnóstico IA
 /api/diagnostico/resultado/<id>/  -> Resultado del análisis
 /api/distribucion/configurar/<id>/ -> Configuración de entrega
@@ -237,7 +247,7 @@ Este proyecto incluye documentación complementaria en:
 ## Siguiente evolución recomendada
 
 - Conectar modelos reales de base de datos.
-- Implementar autenticación de usuarios y roles.
+- Definir permisos y roles específicos para los distintos usuarios.
 - Integrar un modelo de IA real para diagnóstico multimodal.
 - Generar PDF desde información real almacenada.
 - Añadir envío real por Telegram y SMTP.

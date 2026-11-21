@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Crear cuenta | AutoDiag AI{% endblock %}
+
+{% block content %}
+<section class="card">
+    <h1>Crear cuenta</h1>
+    <p class="subtitle">Regístrate para acceder al sistema del taller.</p>
+    <form method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div class="result" role="alert">{{ form.non_field_errors }}</div>
+        {% endif %}
+        {% for field in form %}
+        <div class="field">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}
+            <small>{{ field.help_text }}</small>
+            {% endif %}
+            {% for error in field.errors %}
+            <small role="alert">{{ error }}</small>
+            {% endfor %}
+        </div>
+        {% endfor %}
+        <button class="btn primary" type="submit">Crear cuenta</button>
+    </form>
+    <p>¿Ya tienes una cuenta? <a href="{% url 'login' %}">Inicia sesión</a>.</p>
+</section>
+{% endblock %}

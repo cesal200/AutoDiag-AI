@@ -3,6 +3,7 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
+{% if user.is_staff %}
 <div class="hero">
     <div>
         <span class="eyebrow">Panel principal</span>
@@ -59,4 +60,15 @@
         </ul>
     </div>
 </div>
+{% else %}
+<section class="card">
+    <span class="eyebrow">Área de cliente</span>
+    <h1>Bienvenido, {{ user.username }}</h1>
+    <p class="subtitle">Solicita servicio para tu vehículo y consulta el estado de tus órdenes activas.</p>
+    <div class="button-row">
+        <a class="btn primary" href="{% url 'cliente_orden_nueva' %}">Crear nueva orden</a>
+        <a class="btn secondary" href="{% url 'cliente_orden_lista' %}">Ver mis órdenes activas</a>
+    </div>
+</section>
+{% endif %}
 {% endblock %}

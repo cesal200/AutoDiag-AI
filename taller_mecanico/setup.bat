@@ -13,24 +13,22 @@ python --version
 python -c "import django; print(f'Django {django.VERSION}')"
 
 echo.
-echo Creando superusuario administrador...
-python manage.py createsuperuser --username admin --email admin@taller.mecanico 2>nul
-
-if %errorLevel% equ 0 (
-    echo.
-    echo Superusuario creado exitosamente.
-    echo Usuario: admin
-    echo Contraseña: Se asignó una contraseña segura
-    echo Para cambiarla, use: python manage.py changepassword admin
-) else (
-    echo.
-    echo El superusuario ya existe o hubo un error.
-    echo Para crear uno nuevo: python manage.py createsuperuser --username admin --email admin@taller.mecanico
+echo Aplicando migraciones...
+python manage.py migrate --noinput
+if errorlevel 1 (
+    echo No se pudieron aplicar las migraciones.
+    pause
+    exit /b 1
 )
 
 echo.
-echo Leyendo bases de datos...
-python manage.py migrate
+echo Crea el usuario administrador para iniciar sesion.
+python manage.py createsuperuser
+if errorlevel 1 (
+    echo No se pudo crear el usuario. Revisa el error anterior y vuelve a ejecutar setup.bat.
+    pause
+    exit /b 1
+)
 
 echo.
 echo Cargando datos iniciales...
@@ -41,7 +39,8 @@ echo ==========================================
 echo   Configuración completada
 echo ==========================================
 echo.
-echo Para iniciar el servidor ejecute:
+echo Inicia sesion en http://127.0.0.1:8000/login/
+echo Para iniciar el servidor ejecuta:
 echo   start_django.bat
 echo.
 pause

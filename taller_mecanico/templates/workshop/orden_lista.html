@@ -10,23 +10,25 @@
     <table class="table">
         <thead>
             <tr>
-                <th>ID</th>
+                <th>Código</th>
                 <th>Cliente</th>
                 <th>Vehículo</th>
                 <th>Estado</th>
-                <th>Prioridad</th>
                 <th>Acción</th>
             </tr>
         </thead>
         <tbody>
             {% for orden in ordenes %}
             <tr>
-                <td>#{{ orden.id }}</td>
-                <td>{{ orden.cliente }}</td>
+                <td>{{ orden.codigo_orden }}</td>
+                <td>{{ orden.cliente.username }}</td>
                 <td>{{ orden.vehiculo }}</td>
-                <td><span class="status {% if orden.prioridad == 'Alta' %}danger{% elif orden.prioridad == 'Media' %}warning{% endif %}">{{ orden.estado }}</span></td>
-                <td>{{ orden.prioridad }}</td>
-                <td><a href="/workshop/orden/{{ orden.id }}/">Abrir</a></td>
+                <td><span class="status">{{ orden.get_estado_display }}</span></td>
+                <td><a href="{% url 'orden_detalle' orden.pk %}">Abrir ticket y gestionar</a></td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5">No hay órdenes activas.</td>
             </tr>
             {% endfor %}
         </tbody>

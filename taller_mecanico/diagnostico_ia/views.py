@@ -1,6 +1,11 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 
+from taller_mecanico.permissions import staff_required
 
+
+@login_required
+@staff_required
 def analizar_sintoma(request, orden_id):
     context = {
         'title': 'Diagnóstico IA',
@@ -10,6 +15,8 @@ def analizar_sintoma(request, orden_id):
     return render(request, 'diagnostico_ia/analizar_sintoma.html', context)
 
 
+@login_required
+@staff_required
 def resultado_analisis(request, analisis_id):
     context = {
         'title': 'Resultado del análisis',

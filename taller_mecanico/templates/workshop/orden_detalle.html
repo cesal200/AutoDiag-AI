@@ -7,8 +7,11 @@
     <div class="card">
         <span class="eyebrow">Detalle</span>
         <h1>{{ title }}</h1>
-        <p class="subtitle">Cliente: <strong>{{ cliente }}</strong></p>
-        <p class="subtitle">Vehículo: <strong>{{ vehiculo }}</strong></p>
+        <p class="subtitle">Cliente: <strong>{{ orden.cliente.username }}</strong></p>
+        <p class="subtitle">Vehículo: <strong>{{ orden.vehiculo }}</strong></p>
+        <p class="subtitle">Placa: <strong>{{ orden.placa|default:'No indicada' }}</strong></p>
+        <p class="subtitle">Kilometraje: <strong>{{ orden.kilometraje_ingreso }}</strong></p>
+        <p class="subtitle">Estado: <strong>{{ orden.get_estado_display }}</strong></p>
         <p class="subtitle">Síntoma: {{ sintoma }}</p>
         <div class="button-row">
             <a class="btn primary" href="/api/diagnostico/analizar/{{ orden_id }}/">Ejecutar diagnóstico</a>
@@ -17,11 +20,21 @@
     </div>
 
     <div class="card">
-        <h2>Estado</h2>
-        <p><span class="status warning">{{ riesgo }}</span></p>
-        <div class="result">
-            La orden requiere revisión técnica con prioridad media. Se recomienda validar cableado, sensores y sistema de combustible antes de continuar.
-        </div>
+        <h2>Actualizar orden</h2>
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="field">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}
+                <small role="alert">{{ error }}</small>
+                {% endfor %}
+            </div>
+            {% endfor %}
+            <button class="btn primary" type="submit">Guardar cambios</button>
+        </form>
     </div>
 </div>
+{% include 'workshop/_chat.html' %}
 {% endblock %}

@@ -1,6 +1,11 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 
+from taller_mecanico.permissions import staff_required
 
+
+@login_required
+@staff_required
 def configurar_distribucion(request, orden_id):
     context = {
         'title': 'Configuración de distribución',
@@ -10,6 +15,8 @@ def configurar_distribucion(request, orden_id):
     return render(request, 'distribucion/configurar_distribucion.html', context)
 
 
+@login_required
+@staff_required
 def enviar_reporte(request, orden_id):
     context = {
         'title': 'Enviar reporte',

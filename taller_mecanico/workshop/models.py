@@ -1,5 +1,12 @@
+from uuid import uuid4
+
+from django.conf import settings
 from django.db import models
-from django.contrib.auth.models import User
+from django.utils import timezone
+
+
+def generar_codigo_orden():
+    return f'ORD-{timezone.localdate().year}-{uuid4().hex[:8].upper()}'
 
 
 class OrdenFalla(models.Model):
@@ -13,10 +20,12 @@ class OrdenFalla(models.Model):
         ('ENTREGADO', 'Entregado'),
     ]
     
-    codigo_orden = models.CharField('Código de Orden', max_length=20, unique=True, default='ORD-YYYY-NNN')
+    codigo_orden = models.CharField('Código de Orden', max_length=20, unique=True, default=generar_codigo_orden)
     taller = models.CharField('Taller', max_length=100)
+    cliente = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='ordenes_taller', verbose_name='Cliente')
     vehiculo = models.CharField('Vehículo', max_length=100)
-    mecanico_asignado = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name='Mecánico Asignado')
+    placa = models.CharField('Placa', max_length=15, blank=True, default='')
+    mecanico_asignado = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='Mecánico Asignado')
     kilometraje_ingreso = models.IntegerField('Kilometraje Ingreso')
     estado = models.CharField('Estado', max_length=20, choices=ESTADO_CHOICES, default='PRE_DIAGNOSTICO')
     etiquetas = models.ManyToManyField('Etiqueta', blank=True, verbose_name='Etiquetas')
@@ -55,6 +64,21 @@ class EvidenciaSintoma(models.Model):
     
     def __str__(self):
         return f'Evidencia {self.id} - {self.orden.codigo_orden}'
+
+
+class MensajeOrden(models.Model):
+    orden = models.ForeignKey(OrdenFalla, on_delete=models.CASCADE, related_name='mensajes', verbose_name='Orden')
+    autor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='Autor')
+    contenido = models.TextField('Mensaje')
+    creado_en = models.DateTimeField('Enviado', auto_now_add=True)
+
+    class Meta:
+        ordering = ('creado_en', 'pk')
+        verbose_name = 'Mensaje de orden'
+        verbose_name_plural = 'Mensajes de orden'
+
+    def __str__(self):
+        return f'Mensaje de {self.autor} en {self.orden.codigo_orden}'
 
 
 class ItemPresupuestoRepuestos(models.Model):
