@@ -16,7 +16,6 @@ Including another URLconf
 """
 from django.conf import settings
 from django.conf.urls.static import static
-from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
@@ -29,9 +28,10 @@ urlpatterns = [
     path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('', views.home, name='home'),
-    path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
     path('registro/', accounts_views.registro, name='registro'),
+    path('personal/', accounts_views.gestionar_personal, name='gestionar_personal'),
+    path('usuarios/', accounts_views.gestionar_usuarios, name='gestionar_usuarios'),
     path('panel/', workshop_views.dashboard, name='dashboard'),
     path('panel/admin/', workshop_views.dashboard_admin, name='dashboard_admin'),
     path('panel/cliente/', workshop_views.dashboard_cliente, name='dashboard_cliente'),

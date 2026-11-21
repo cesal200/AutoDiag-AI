@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}Usuarios registrados{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <div>
+        <span class="eyebrow">Administración de cuentas</span>
+        <h1>Usuarios registrados</h1>
+        <p class="subtitle">Consulta, cambia el puesto o elimina cuentas registradas en el sistema.</p>
+    </div>
+    <div class="panel">
+        <span class="badge">Solo administrador</span>
+        <p class="subtitle" style="margin-top: 12px;">Las eliminaciones son permanentes. No puedes eliminar tu propia cuenta desde esta pantalla.</p>
+    </div>
+</div>
+
+<div class="panel" style="margin-top: 20px;">
+    <form method="get" class="inline-form">
+        <div class="field" style="min-width: 240px;">
+            <label for="buscar-usuarios">Buscar usuario</label>
+            <input id="buscar-usuarios" type="search" name="q" value="{{ busqueda }}" placeholder="Nombre, usuario o correo">
+        </div>
+        <div class="field" style="min-width: 180px;">
+            <label for="filtro-rol">Puesto</label>
+            <select id="filtro-rol" name="rol">
+                <option value="">Todos</option>
+                {% for valor, etiqueta in roles %}
+                    <option value="{{ valor }}" {% if rol_filtro == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button class="btn secondary" type="submit">Filtrar</button>
+    </form>
+</div>
+
+<div class="panel" style="margin-top: 20px;">
+    {% if usuarios %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Usuario</th>
+                    <th>Correo</th>
+                    <th>Puesto</th>
+                    <th>Teléfono</th>
+                    <th>Especialidad</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for usuario in usuarios %}
+                    <tr>
+                        <td>{{ usuario.get_full_name|default:usuario.get_username }}</td>
+                        <td>{{ usuario.email|default:'—' }}</td>
+                        <td>
+                            <form method="post" class="inline-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="actualizar">
+                                <input type="hidden" name="usuario_id" value="{{ usuario.pk }}">
+                                <select name="rol" aria-label="Puesto de {{ usuario.username }}">
+                                    {% for valor, etiqueta in roles %}
+                                        <option value="{{ valor }}" {% if usuario.perfil.rol == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                                    {% endfor %}
+                                </select>
+                        </td>
+                        <td><input type="text" name="telefono" value="{{ usuario.perfil.telefono }}" maxlength="30" aria-label="Teléfono"></td>
+                        <td><input type="text" name="especialidad" value="{{ usuario.perfil.especialidad }}" maxlength="100" aria-label="Especialidad"></td>
+                        <td>
+                            <div class="actions">
+                                <button class="link-button" type="submit">Guardar</button>
+                            </form>
+                                {% if usuario.pk != user.pk and not usuario.is_superuser %}
+                                    <form method="post" onsubmit="return confirm('¿Eliminar permanentemente a {{ usuario.username }}?');">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="accion" value="eliminar">
+                                        <input type="hidden" name="usuario_id" value="{{ usuario.pk }}">
+                                        <button class="link-button" type="submit" style="color: #fecaca;">Eliminar</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty">No se encontraron usuarios registrados.</p>
+    {% endif %}
+</div>
+{% endblock %}

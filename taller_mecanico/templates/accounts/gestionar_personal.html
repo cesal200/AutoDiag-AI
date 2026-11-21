@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}Personal del taller{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <div>
+        <span class="eyebrow">Administración</span>
+        <h1>Personal del taller</h1>
+        <p class="subtitle">Crea usuarios de asesoría o mecánica directamente o genera un código de puesto válido por siete días.</p>
+    </div>
+    <div class="panel">
+        <span class="badge">Acceso autorizado</span>
+        <ul style="margin: 18px 0 0; padding-left: 18px; line-height: 1.8;">
+            <li>Los mecánicos ven solo sus órdenes asignadas.</li>
+            <li>Los asesores gestionan clientes y órdenes.</li>
+            <li>Los códigos solo pueden usarse una vez.</li>
+        </ul>
+    </div>
+</div>
+
+<div class="detail-grid">
+    <div class="panel">
+        <h2>Crear usuario directamente</h2>
+        <form method="post" style="margin-top: 16px;">
+            {% csrf_token %}
+            <input type="hidden" name="crear_personal" value="1">
+            {% for field in crear_form %}
+                <div class="field">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}<p class="help">{{ field.help_text|safe }}</p>{% endif %}
+                    {% for error in field.errors %}<p class="errorlist">{{ error }}</p>{% endfor %}
+                </div>
+            {% endfor %}
+            <button class="btn primary" type="submit">Crear usuario</button>
+        </form>
+    </div>
+
+    <div class="panel">
+        <h2>Generar código de puesto</h2>
+        <form method="post" style="margin-top: 16px;">
+            {% csrf_token %}
+            <input type="hidden" name="crear_invitacion" value="1">
+            {% for field in invitacion_form %}
+                <div class="field">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}<p class="help">{{ field.help_text|safe }}</p>{% endif %}
+                    {% for error in field.errors %}<p class="errorlist">{{ error }}</p>{% endfor %}
+                </div>
+            {% endfor %}
+            <button class="btn secondary" type="submit">Generar código</button>
+        </form>
+    </div>
+</div>
+
+<div class="panel" style="margin-top: 20px;">
+    <h2>Códigos emitidos</h2>
+    {% if invitaciones %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Puesto</th>
+                    <th>Especialidad</th>
+                    <th>Vigencia</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for invitacion in invitaciones %}
+                    <tr>
+                        <td><strong>{{ invitacion.codigo }}</strong></td>
+                        <td>{{ invitacion.get_rol_display }}</td>
+                        <td>{{ invitacion.especialidad|default:'—' }}</td>
+                        <td>{{ invitacion.expira_en|date:'d/m/Y H:i' }}</td>
+                        <td>
+                            {% if invitacion.usado_por %}
+                                <span class="status">Usado por {{ invitacion.usado_por.get_username }}</span>
+                            {% elif invitacion.vigente %}
+                                <span class="status">Disponible</span>
+                            {% else %}
+                                <span class="status danger">Expirado</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty">Todavía no has generado códigos de puesto.</p>
+    {% endif %}
+</div>
+
+<div class="panel" style="margin-top: 20px;">
+    <h2>Personal registrado</h2>
+    {% if personal %}
+        <table class="table">
+            <thead>
+                <tr><th>Usuario</th><th>Puesto</th><th>Especialidad</th><th>Teléfono</th></tr>
+            </thead>
+            <tbody>
+                {% for perfil in personal %}
+                    <tr>
+                        <td>{{ perfil.user.get_full_name|default:perfil.user.get_username }}</td>
+                        <td>{{ perfil.get_rol_display }}</td>
+                        <td>{{ perfil.especialidad|default:'—' }}</td>
+                        <td>{{ perfil.telefono|default:'—' }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty">No hay asesores ni mecánicos registrados.</p>
+    {% endif %}
+</div>
+{% endblock %}
