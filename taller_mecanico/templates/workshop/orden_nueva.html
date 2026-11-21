@@ -14,16 +14,65 @@
 
     <form method="post" style="margin-top: 20px;">
         {% csrf_token %}
-        <div class="form-grid">
-            {% for field in form %}
-                <div class="field">
-                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                    {{ field }}
-                    {% if field.help_text %}<p class="help">{{ field.help_text|safe }}</p>{% endif %}
-                    {% for error in field.errors %}<p class="errorlist">{{ error }}</p>{% endfor %}
-                </div>
-            {% endfor %}
+
+        <div class="form-section-grid">
+            <div class="card">
+                <h2>Vehículo</h2>
+                {% for field in form %}
+                    {% if field.name == 'vehiculo' or field.name == 'placa' or field.name == 'marca' or field.name == 'modelo' or field.name == 'anio' or field.name == 'motor' %}
+                        <div class="field">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}<p class="help">{{ field.help_text|safe }}</p>{% endif %}
+                            {% for error in field.errors %}<p class="errorlist">{{ error }}</p>{% endfor %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <div class="card">
+                <h2>Datos de la orden</h2>
+                {% for field in form %}
+                    {% if field.name == 'cliente' or field.name == 'nombre_cliente_walkin' or field.name == 'telefono_cliente_walkin' or field.name == 'taller' or field.name == 'kilometraje_ingreso' %}
+                        <div class="field">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}<p class="help">{{ field.help_text|safe }}</p>{% endif %}
+                            {% for error in field.errors %}<p class="errorlist">{{ error }}</p>{% endfor %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
         </div>
+
+        <div class="card form-section">
+            <h2>Etiquetas sugeridas</h2>
+            <p class="subtitle">Selecciona etiquetas disponibles o escribe etiquetas nuevas separadas por comas.</p>
+
+            {% for field in form %}
+                {% if field.name == 'etiquetas' %}
+                    <div class="field tag-field">
+                        <label>Etiquetas disponibles</label>
+                        <div class="tag-options">{{ field }}</div>
+                    </div>
+                {% elif field.name == 'nuevas_etiquetas' %}
+                    <div class="field tag-field">
+                        <label for="{{ field.id_for_label }}">Etiquetas nuevas</label>
+                        {{ field }}
+                        {% if field.help_text %}<p class="help">{{ field.help_text|safe }}</p>{% endif %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+
+            <div class="tag-suggestions" style="margin-top: 14px;">
+                {% for sugerencia in sugerencias_etiquetas %}
+                    <button class="btn secondary sugerencia-etiqueta" type="button" data-etiqueta="{{ sugerencia }}">
+                        {{ sugerencia }}
+                    </button>
+                {% endfor %}
+            </div>
+        </div>
+
         <div class="button-row">
             <button class="btn primary" type="submit">Guardar orden</button>
             <a class="btn secondary" href="{% url 'vehiculo_nueva' %}">Registrar vehículo primero</a>
@@ -59,4 +108,25 @@
     </form>
 </div>
 {% endif %}
+
+<script>
+    document.querySelectorAll('.sugerencia-etiqueta').forEach(function (boton) {
+        boton.addEventListener('click', function () {
+            const campo = document.querySelector('[name="nuevas_etiquetas"]');
+            if (!campo) return;
+
+            const etiqueta = this.dataset.etiqueta;
+            const actuales = campo.value
+                .split(',')
+                .map(function (valor) { return valor.trim(); })
+                .filter(Boolean)
+                .map(function (valor) { return valor.startsWith('#') ? valor : '#' + valor; });
+
+            if (!actuales.includes(etiqueta)) {
+                actuales.push(etiqueta);
+                campo.value = actuales.join(', ');
+            }
+        });
+    });
+</script>
 {% endblock %}

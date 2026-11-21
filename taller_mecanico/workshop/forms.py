@@ -38,12 +38,22 @@ class OrdenFallaForm(forms.ModelForm):
     placa = forms.CharField(label='Placa', max_length=20, required=False)
     marca = forms.CharField(label='Marca', max_length=50, required=False)
     modelo = forms.CharField(label='Modelo', max_length=50, required=False)
+    nuevas_etiquetas = forms.CharField(
+        label='Etiquetas',
+        required=False,
+        help_text='Escribe etiquetas separadas por comas. Ejemplo: Urgente, Garantía',
+    )
     anio = forms.IntegerField(
         label='Año',
         required=False,
         widget=forms.NumberInput(attrs={'min': 1900, 'max': timezone.now().year + 1}),
     )
     motor = forms.CharField(label='Motor', max_length=50, required=False)
+    nuevas_etiquetas = forms.CharField(
+        label='Etiquetas nuevas',
+        required=False,
+        help_text='Separa varias etiquetas con comas. Ejemplo: Urgente, Garantía',
+    )
 
     class Meta:
         model = OrdenFalla
@@ -55,6 +65,7 @@ class OrdenFallaForm(forms.ModelForm):
             'vehiculo',
             'kilometraje_ingreso',
             'etiquetas',
+            'nuevas_etiquetas',
         ]
         widgets = {
             'kilometraje_ingreso': forms.NumberInput(attrs={'min': 0}),
@@ -75,6 +86,11 @@ class OrdenFallaForm(forms.ModelForm):
             'Obligatorio si no seleccionas un cliente registrado.'
         )
         self.fields['etiquetas'].required = False
+        self.fields['etiquetas'].queryset = Etiqueta.objects.order_by('nombre')
+        self.fields['etiquetas'].widget = forms.CheckboxSelectMultiple()
+        self.fields['nuevas_etiquetas'].widget.attrs.update({
+            'placeholder': '#Urgente, #Garantía',
+        })
         self.fields['taller'].queryset = Taller.objects.filter(activo=True)
         if not self.fields['taller'].queryset.exists():
             taller, _ = Taller.objects.get_or_create(nombre='Taller AutoDiag')
@@ -118,7 +134,8 @@ class OrdenFallaForm(forms.ModelForm):
                 motor=self.cleaned_data.get('motor', '').strip(),
                 cliente=self.cleaned_data.get('cliente') if not es_cliente(self.user) else self.user,
             )
-        return super().save(commit=commit)
+        orden = super().save(commit=commit)
+        return orden
 
 
 class EditarOrdenForm(forms.ModelForm):
@@ -132,7 +149,7 @@ class EditarOrdenForm(forms.ModelForm):
     motor = forms.CharField(label='Motor', max_length=50, required=False)
     color = forms.CharField(label='Color', max_length=30, required=False)
     nuevas_etiquetas = forms.CharField(
-        label='Agregar etiquetas',
+        label='Etiquetas nuevas',
         required=False,
         help_text='Separa varias etiquetas con comas. Ejemplo: Urgente, Garantía',
     )
@@ -147,6 +164,7 @@ class EditarOrdenForm(forms.ModelForm):
             'mecanico_asignado',
             'kilometraje_ingreso',
             'etiquetas',
+            'nuevas_etiquetas',
         ]
         widgets = {
             'kilometraje_ingreso': forms.NumberInput(attrs={'min': 0}),
