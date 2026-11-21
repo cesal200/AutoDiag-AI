@@ -6,7 +6,7 @@ from django.utils import timezone
 from datetime import timedelta
 
 from .models import InvitacionPersonal, PerfilUsuario
-from workshop.models import Etiqueta, Taller, Vehiculo, OrdenFalla
+from workshop.models import Etiqueta, MensajeOrden, Taller, Vehiculo, OrdenFalla
 
 
 @override_settings(PASSWORD_HASHERS=['django.contrib.auth.hashers.MD5PasswordHasher'])
@@ -284,3 +284,130 @@ class PersonalTests(TestCase):
         self.assertEqual(vehiculo.marca, 'Honda')
         self.assertTrue(orden.etiquetas.filter(nombre='#Urgente').exists())
         self.assertTrue(orden.etiquetas.filter(nombre='#Garantía').exists())
+
+    def test_admin_puede_quitar_y_agregar_etiquetas_en_edicion(self):
+        cliente = User.objects.create_user(
+            'cliente_etiquetas',
+            email='cliente_etiquetas@example.com',
+            password='ClaveSegura123',
+        )
+        vehiculo = Vehiculo.objects.create(
+            placa='TAG-001',
+            marca='Mazda',
+            modelo='3',
+            anio=2021,
+            cliente=cliente,
+        )
+        orden = OrdenFalla.objects.create(
+            taller=self.taller,
+            vehiculo=vehiculo,
+            cliente=cliente,
+            kilometraje_ingreso=8000,
+        )
+        etiqueta_vieja = Etiqueta.objects.create(nombre='#Revisión', color='#64748b')
+        orden.etiquetas.add(etiqueta_vieja)
+        self.client.login(username='admin_personal', password='ClaveSegura123')
+
+        response = self.client.post(reverse('editar_orden', args=[orden.pk]), {
+            'cliente': cliente.pk,
+            'nombre_cliente_walkin': '',
+            'telefono_cliente_walkin': '',
+            'taller': self.taller.pk,
+            'mecanico_asignado': '',
+            'kilometraje_ingreso': 9000,
+            'etiquetas': [],
+            'placa': 'TAG-001',
+            'marca': 'Mazda',
+            'modelo': '3',
+            'anio': 2021,
+            'motor': '',
+            'color': '',
+            'nuevas_etiquetas': 'Urgente',
+        })
+
+        self.assertRedirects(
+            response,
+            reverse('orden_detalle', args=[orden.pk]),
+            fetch_redirect_response=False,
+        )
+        orden.refresh_from_db()
+        self.assertFalse(orden.etiquetas.filter(pk=etiqueta_vieja.pk).exists())
+        self.assertTrue(orden.etiquetas.filter(nombre='#Urgente').exists())
+
+    def test_pantallas_nueva_y_edicion_organizan_etiquetas(self):
+        cliente = User.objects.create_user(
+            'cliente_layout',
+            email='cliente_layout@example.com',
+            password='ClaveSegura123',
+        )
+        vehiculo = Vehiculo.objects.create(
+            placa='LAY-001',
+            marca='Nissan',
+            modelo='Sentra',
+            anio=2023,
+            cliente=cliente,
+        )
+        orden = OrdenFalla.objects.create(
+            taller=self.taller,
+            vehiculo=vehiculo,
+            cliente=cliente,
+            kilometraje_ingreso=5000,
+        )
+        self.client.login(username='admin_personal', password='ClaveSegura123')
+
+        nueva = self.client.get(reverse('orden_nueva'))
+        edicion = self.client.get(reverse('editar_orden', args=[orden.pk]))
+
+        self.assertContains(nueva, 'Etiquetas disponibles')
+        self.assertContains(nueva, 'Etiquetas nuevas')
+        self.assertContains(nueva, 'Etiquetas sugeridas')
+        self.assertContains(edicion, 'Etiquetas existentes')
+        self.assertContains(edicion, 'Etiquetas nuevas')
+
+    def test_detalle_muestra_menu_lateral_y_chat_no_leido(self):
+        cliente = User.objects.create_user(
+            'cliente_menu',
+            email='cliente_menu@example.com',
+            password='ClaveSegura123',
+        )
+        mecanico = User.objects.create_user(
+            'mecanico_menu',
+            password='ClaveSegura123',
+        )
+        mecanico.perfil.rol = PerfilUsuario.Rol.MECANICO
+        mecanico.perfil.save(update_fields=['rol'])
+        vehiculo = Vehiculo.objects.create(
+            placa='MENU-001',
+            marca='Toyota',
+            modelo='Hilux',
+            anio=2024,
+            cliente=cliente,
+        )
+        orden = OrdenFalla.objects.create(
+            taller=self.taller,
+            vehiculo=vehiculo,
+            cliente=cliente,
+            mecanico_asignado=mecanico,
+            kilometraje_ingreso=12000,
+        )
+        MensajeOrden.objects.create(
+            orden=orden,
+            autor=cliente,
+            contenido='¿Hay novedades con el trabajo?',
+        )
+        self.client.login(username='mecanico_menu', password='ClaveSegura123')
+
+        detalle = self.client.get(reverse('orden_detalle', args=[orden.pk]))
+        lista = self.client.get(reverse('orden_lista'))
+
+        self.assertContains(detalle, 'data-order-section="chat"')
+        self.assertContains(detalle, 'Presupuesto')
+        self.assertContains(detalle, 'Diagnóstico IA')
+        self.assertContains(detalle, 'Distribución')
+        self.assertContains(detalle, 'unread-badge')
+        self.assertEqual(detalle.context['mensajes_no_leidos'], 1)
+
+        chat = self.client.get(reverse('mensajes_orden', args=[orden.pk]))
+        self.assertEqual(chat.status_code, 200)
+        mensajes = MensajeOrden.objects.filter(orden=orden).first()
+        self.assertTrue(mensajes.leidos_por.filter(pk=mecanico.pk).exists())

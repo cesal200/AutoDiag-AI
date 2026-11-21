@@ -29,6 +29,8 @@
         if (!chatMessages || !chatError) return;
 
         async function refreshMessages() {
+            const chatSection = chatMessages.closest('[data-order-content="chat"]');
+            if (chatSection && chatSection.hidden) return;
             try {
                 const response = await fetch(chatMessages.dataset.refreshUrl, {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
@@ -46,6 +48,7 @@
         }
 
         chatMessages.scrollTop = chatMessages.scrollHeight;
+        window.addEventListener('order-chat-opened', refreshMessages);
         window.setInterval(refreshMessages, 5000);
     })();
 </script>

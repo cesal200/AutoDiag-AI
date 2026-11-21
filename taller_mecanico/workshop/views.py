@@ -79,6 +79,11 @@ def orden_lista(request):
     elif mecanico.isdigit():
         ordenes = ordenes.filter(mecanico_asignado_id=int(mecanico))
 
+    for orden in ordenes:
+        orden.mensajes_no_leidos = orden.mensajes.exclude(
+            autor=request.user
+        ).exclude(leidos_por=request.user).count()
+
     return render(request, 'workshop/orden_lista.html', {
         'title': 'Órdenes',
         'ordenes': ordenes,
@@ -117,6 +122,18 @@ def orden_nueva(request):
                     orden.cliente = request.user
                 orden.save()
                 form.save_m2m()
+                nuevas_etiquetas = form.cleaned_data.get('nuevas_etiquetas', '')
+                nombres = [
+                    nombre.strip().lstrip('#')
+                    for nombre in nuevas_etiquetas.split(',')
+                    if nombre.strip()
+                ]
+                for nombre in dict.fromkeys(nombres):
+                    etiqueta, _ = Etiqueta.objects.get_or_create(
+                        nombre=f'#{nombre}',
+                        defaults={'color': '#6C757D'},
+                    )
+                    orden.etiquetas.add(etiqueta)
                 messages.success(
                     request,
                     'Orden creada. Comparte el enlace de seguimiento con el cliente.',
@@ -138,6 +155,17 @@ def orden_nueva(request):
         'form': form,
         'cliente_rapido_form': cliente_rapido_form,
         'es_admin_operativo': admin_operativo,
+        'sugerencias_etiquetas': [
+            '#Motor',
+            '#Frenos',
+            '#Suspensión',
+            '#Sistema eléctrico',
+            '#Refrigeración',
+            '#Transmisión',
+            '#Urgente',
+            '#Garantía',
+            '#Mantención',
+        ],
     })
 
 
@@ -184,6 +212,9 @@ def orden_detalle(request, orden_id):
     config_distribucion = getattr(orden, 'config_distribucion', None)
     codigos_estado = [codigo for codigo, _ in ESTADO_CHOICES]
     indice_actual = codigos_estado.index(orden.estado)
+    mensajes_no_leidos = orden.mensajes.exclude(
+        autor=request.user
+    ).exclude(leidos_por=request.user).count()
 
     context = {
         'title': f'Orden {orden.codigo_orden}',
@@ -200,6 +231,7 @@ def orden_detalle(request, orden_id):
         'form_evidencia': EvidenciaSintomaForm() if puede_evidenciar else None,
         'mensaje_form': MensajeOrdenForm(),
         'mensajes': orden.mensajes.select_related('autor').all(),
+        'mensajes_no_leidos': mensajes_no_leidos,
         'usuario_id': request.user.id,
         'ultimo_analisis': orden.analisis_ia.first(),
         'config_distribucion': config_distribucion,
@@ -262,6 +294,8 @@ def mensajes_orden(request, orden_id):
     if not puede_ver_orden(request.user, orden):
         raise PermissionDenied
     mensajes = orden.mensajes.select_related('autor').all()
+    for mensaje in mensajes.exclude(autor=request.user).exclude(leidos_por=request.user):
+        mensaje.leidos_por.add(request.user)
     return render(request, 'workshop/_mensajes_orden.html', {
         'mensajes': mensajes,
         'usuario_id': request.user.id,

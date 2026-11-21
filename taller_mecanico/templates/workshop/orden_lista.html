@@ -84,6 +84,9 @@
                             {% if es_admin_operativo %}
                                 · <a href="{% url 'editar_orden' orden.pk %}">Editar</a>
                             {% endif %}
+                            {% if orden.mensajes_no_leidos %}
+                                · <a class="unread-badge" href="{% url 'orden_detalle' orden.pk %}#chat">{{ orden.mensajes_no_leidos }}</a>
+                            {% endif %}
                         </td>
                     </tr>
                 {% endfor %}
