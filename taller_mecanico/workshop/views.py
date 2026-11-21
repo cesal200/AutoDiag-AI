@@ -26,13 +26,14 @@ from .forms import (
     AsignarMecanicoForm,
     CambioEstadoForm,
     ClienteRapidoForm,
+    EditarOrdenForm,
     EvidenciaSintomaForm,
     ItemPresupuestoForm,
     MensajeOrdenForm,
     OrdenFallaForm,
     VehiculoForm,
 )
-from .models import ESTADO_CHOICES, OrdenFalla, Vehiculo
+from .models import ESTADO_CHOICES, Etiqueta, OrdenFalla, Vehiculo
 from .pdf import construir_pdf
 
 
@@ -216,6 +217,43 @@ def orden_detalle(request, orden_id):
         ),
     }
     return render(request, 'workshop/orden_detalle.html', context)
+
+
+@rol_requerido(PerfilUsuario.Rol.ADMIN, PerfilUsuario.Rol.ASESOR)
+def editar_orden(request, orden_id):
+    orden = get_object_or_404(
+        OrdenFalla.objects.select_related(
+            'cliente', 'mecanico_asignado', 'vehiculo', 'taller'
+        ).prefetch_related('etiquetas'),
+        pk=orden_id,
+    )
+
+    form = EditarOrdenForm(request.POST or None, instance=orden)
+    if request.method == 'POST' and form.is_valid():
+        orden = form.save()
+        messages.success(request, f'La orden {orden.codigo_orden} fue actualizada.')
+        return redirect('orden_detalle', orden_id=orden.pk)
+
+    sugeridas = [
+        '#Motor',
+        '#Frenos',
+        '#Suspensión',
+        '#Sistema eléctrico',
+        '#Refrigeración',
+        '#Transmisión',
+        '#Urgente',
+        '#Garantía',
+        '#Mantención',
+    ]
+    etiquetas_sugeridas = Etiqueta.objects.filter(nombre__in=sugeridas).order_by('nombre')
+
+    return render(request, 'workshop/editar_orden.html', {
+        'title': f'Editar orden {orden.codigo_orden}',
+        'orden': orden,
+        'form': form,
+        'etiquetas_sugeridas': etiquetas_sugeridas,
+        'sugerencias_etiquetas': sugeridas,
+    })
 
 
 @login_required

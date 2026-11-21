@@ -6,6 +6,7 @@ from accounts.models import PerfilUsuario
 from accounts.permissions import es_cliente
 
 from .models import (
+    Etiqueta,
     EvidenciaSintoma,
     ItemPresupuestoRepuestos,
     MensajeOrden,
@@ -118,6 +119,112 @@ class OrdenFallaForm(forms.ModelForm):
                 cliente=self.cleaned_data.get('cliente') if not es_cliente(self.user) else self.user,
             )
         return super().save(commit=commit)
+
+
+class EditarOrdenForm(forms.ModelForm):
+    placa = forms.CharField(label='Placa', max_length=20)
+    marca = forms.CharField(label='Marca', max_length=50)
+    modelo = forms.CharField(label='Modelo', max_length=50)
+    anio = forms.IntegerField(
+        label='Año',
+        widget=forms.NumberInput(attrs={'min': 1900, 'max': timezone.now().year + 1}),
+    )
+    motor = forms.CharField(label='Motor', max_length=50, required=False)
+    color = forms.CharField(label='Color', max_length=30, required=False)
+    nuevas_etiquetas = forms.CharField(
+        label='Agregar etiquetas',
+        required=False,
+        help_text='Separa varias etiquetas con comas. Ejemplo: Urgente, Garantía',
+    )
+
+    class Meta:
+        model = OrdenFalla
+        fields = [
+            'cliente',
+            'nombre_cliente_walkin',
+            'telefono_cliente_walkin',
+            'taller',
+            'mecanico_asignado',
+            'kilometraje_ingreso',
+            'etiquetas',
+        ]
+        widgets = {
+            'kilometraje_ingreso': forms.NumberInput(attrs={'min': 0}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['cliente'].queryset = User.objects.filter(
+            perfil__rol=PerfilUsuario.Rol.CLIENTE
+        ).order_by('first_name', 'last_name', 'username')
+        self.fields['cliente'].required = False
+        self.fields['nombre_cliente_walkin'].required = False
+        self.fields['telefono_cliente_walkin'].required = False
+        self.fields['etiquetas'].required = False
+        self.fields['etiquetas'].queryset = Etiqueta.objects.order_by('nombre')
+        self.fields['taller'].queryset = Taller.objects.filter(activo=True)
+        self.fields['mecanico_asignado'].queryset = User.objects.filter(
+            perfil__rol=PerfilUsuario.Rol.MECANICO
+        ).order_by('first_name', 'last_name', 'username')
+        self.fields['mecanico_asignado'].required = False
+
+        vehiculo = getattr(self.instance, 'vehiculo', None)
+        if vehiculo:
+            for campo, valor in (
+                ('placa', vehiculo.placa),
+                ('marca', vehiculo.marca),
+                ('modelo', vehiculo.modelo),
+                ('anio', vehiculo.anio),
+                ('motor', vehiculo.motor),
+                ('color', vehiculo.color),
+            ):
+                self.initial.setdefault(campo, valor)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        placa = (cleaned_data.get('placa') or '').strip().upper()
+        cleaned_data['placa'] = placa
+        if placa:
+            repetida = Vehiculo.objects.filter(placa__iexact=placa).exclude(
+                pk=getattr(self.instance.vehiculo, 'pk', None)
+            )
+            if repetida.exists():
+                self.add_error('placa', 'Ya existe otro vehículo con esta placa.')
+        if not cleaned_data.get('cliente') and not (
+            cleaned_data.get('nombre_cliente_walkin') or ''
+        ).strip():
+            self.add_error(
+                'nombre_cliente_walkin',
+                'Selecciona un cliente registrado o indica el nombre del cliente walk-in.',
+            )
+        return cleaned_data
+
+    def save(self, commit=True):
+        orden = super().save(commit=commit)
+        vehiculo = orden.vehiculo
+        vehiculo.placa = self.cleaned_data['placa']
+        vehiculo.marca = self.cleaned_data['marca']
+        vehiculo.modelo = self.cleaned_data['modelo']
+        vehiculo.anio = self.cleaned_data['anio']
+        vehiculo.motor = self.cleaned_data.get('motor', '')
+        vehiculo.color = self.cleaned_data.get('color', '')
+        vehiculo.cliente = orden.cliente
+        if commit:
+            vehiculo.save()
+
+        nuevas_etiquetas = self.cleaned_data.get('nuevas_etiquetas', '')
+        nombres = [
+            nombre.strip().lstrip('#')
+            for nombre in nuevas_etiquetas.split(',')
+            if nombre.strip()
+        ]
+        for nombre in dict.fromkeys(nombres):
+            etiqueta, _ = Etiqueta.objects.get_or_create(
+                nombre=f'#{nombre}',
+                defaults={'color': '#6C757D'},
+            )
+            orden.etiquetas.add(etiqueta)
+        return orden
 
 
 class ClienteRapidoForm(forms.Form):

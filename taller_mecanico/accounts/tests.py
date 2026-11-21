@@ -6,7 +6,7 @@ from django.utils import timezone
 from datetime import timedelta
 
 from .models import InvitacionPersonal, PerfilUsuario
-from workshop.models import Taller, Vehiculo, OrdenFalla
+from workshop.models import Etiqueta, Taller, Vehiculo, OrdenFalla
 
 
 @override_settings(PASSWORD_HASHERS=['django.contrib.auth.hashers.MD5PasswordHasher'])
@@ -100,6 +100,7 @@ class InicioPorRolTests(TestCase):
 @override_settings(PASSWORD_HASHERS=['django.contrib.auth.hashers.MD5PasswordHasher'])
 class PersonalTests(TestCase):
     def setUp(self):
+        self.taller = Taller.objects.create(nombre='Taller Edición')
         self.admin = User.objects.create_superuser(
             'admin_personal',
             'admin_personal@example.com',
@@ -227,3 +228,59 @@ class PersonalTests(TestCase):
         response = self.client.get('/admin/')
 
         self.assertEqual(response.status_code, 404)
+
+    def test_admin_edita_datos_y_etiquetas_de_una_orden(self):
+        cliente = User.objects.create_user(
+            'cliente_edicion',
+            email='cliente_edicion@example.com',
+            password='ClaveSegura123',
+        )
+        vehiculo = Vehiculo.objects.create(
+            placa='OLD-001',
+            marca='Toyota',
+            modelo='Corolla',
+            anio=2022,
+            cliente=cliente,
+        )
+        orden = OrdenFalla.objects.create(
+            taller=self.taller,
+            vehiculo=vehiculo,
+            cliente=cliente,
+            kilometraje_ingreso=10000,
+        )
+        etiqueta_existente = Etiqueta.objects.create(
+            nombre='#Motor',
+            color='#f59e0b',
+        )
+        orden.etiquetas.add(etiqueta_existente)
+        self.client.login(username='admin_personal', password='ClaveSegura123')
+
+        response = self.client.post(reverse('editar_orden', args=[orden.pk]), {
+            'cliente': cliente.pk,
+            'nombre_cliente_walkin': '',
+            'telefono_cliente_walkin': '',
+            'taller': self.taller.pk,
+            'mecanico_asignado': '',
+            'kilometraje_ingreso': 14500,
+            'etiquetas': [etiqueta_existente.pk],
+            'placa': 'NEW-001',
+            'marca': 'Honda',
+            'modelo': 'Civic',
+            'anio': 2024,
+            'motor': '1.5 Turbo',
+            'color': 'Gris',
+            'nuevas_etiquetas': 'Urgente, Garantía',
+        })
+
+        self.assertRedirects(
+            response,
+            reverse('orden_detalle', args=[orden.pk]),
+            fetch_redirect_response=False,
+        )
+        orden.refresh_from_db()
+        vehiculo.refresh_from_db()
+        self.assertEqual(orden.kilometraje_ingreso, 14500)
+        self.assertEqual(vehiculo.placa, 'NEW-001')
+        self.assertEqual(vehiculo.marca, 'Honda')
+        self.assertTrue(orden.etiquetas.filter(nombre='#Urgente').exists())
+        self.assertTrue(orden.etiquetas.filter(nombre='#Garantía').exists())

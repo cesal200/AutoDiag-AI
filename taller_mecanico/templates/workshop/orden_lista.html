@@ -79,7 +79,12 @@
                         </td>
                         <td>{% if orden.mecanico_asignado %}{{ orden.mecanico_asignado.get_username }}{% else %}—{% endif %}</td>
                         <td>{{ orden.creado_en|date:'d/m/Y' }}</td>
-                        <td><a href="{% url 'orden_detalle' orden.pk %}">Abrir</a></td>
+                        <td>
+                            <a href="{% url 'orden_detalle' orden.pk %}">Abrir</a>
+                            {% if es_admin_operativo %}
+                                · <a href="{% url 'editar_orden' orden.pk %}">Editar</a>
+                            {% endif %}
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>

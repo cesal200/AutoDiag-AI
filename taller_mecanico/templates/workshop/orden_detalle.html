@@ -40,6 +40,9 @@
         <div class="card">
             <h2>Acciones</h2>
             <div class="actions">
+                {% if es_admin_operativo %}
+                    <a class="btn secondary" href="{% url 'editar_orden' orden.pk %}">Editar datos y etiquetas</a>
+                {% endif %}
                 <a class="btn primary" href="{% url 'generar_pdf' orden.pk %}">Ver reporte</a>
                 <a class="btn secondary" href="{% url 'descargar_pdf' orden.pk %}">Descargar PDF</a>
                 <a class="btn secondary" href="#chat-ticket">💬 Chat del cliente</a>
