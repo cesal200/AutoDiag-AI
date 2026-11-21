@@ -28,6 +28,7 @@ from .forms import (
     ClienteRapidoForm,
     EvidenciaSintomaForm,
     ItemPresupuestoForm,
+    MensajeOrdenForm,
     OrdenFallaForm,
     VehiculoForm,
 )
@@ -165,7 +166,8 @@ def orden_detalle(request, orden_id):
         OrdenFalla.objects.select_related(
             'cliente', 'mecanico_asignado', 'vehiculo', 'taller'
         ).prefetch_related(
-            'items_presupuesto', 'evidencias', 'etiquetas', 'analisis_ia'
+            'items_presupuesto', 'evidencias', 'etiquetas', 'analisis_ia',
+            'mensajes__autor',
         ),
         pk=orden_id,
     )
@@ -195,6 +197,9 @@ def orden_detalle(request, orden_id):
         'form_mecanico': AsignarMecanicoForm(instance=orden) if admin_operativo else None,
         'form_item': ItemPresupuestoForm() if puede_operar else None,
         'form_evidencia': EvidenciaSintomaForm() if puede_evidenciar else None,
+        'mensaje_form': MensajeOrdenForm(),
+        'mensajes': orden.mensajes.select_related('autor').all(),
+        'usuario_id': request.user.id,
         'ultimo_analisis': orden.analisis_ia.first(),
         'config_distribucion': config_distribucion,
         'workflow': [
@@ -211,6 +216,37 @@ def orden_detalle(request, orden_id):
         ),
     }
     return render(request, 'workshop/orden_detalle.html', context)
+
+
+@login_required
+def mensajes_orden(request, orden_id):
+    orden = get_object_or_404(OrdenFalla, pk=orden_id)
+    if not puede_ver_orden(request.user, orden):
+        raise PermissionDenied
+    mensajes = orden.mensajes.select_related('autor').all()
+    return render(request, 'workshop/_mensajes_orden.html', {
+        'mensajes': mensajes,
+        'usuario_id': request.user.id,
+    })
+
+
+@login_required
+@require_POST
+def enviar_mensaje_orden(request, orden_id):
+    orden = get_object_or_404(OrdenFalla, pk=orden_id)
+    if not puede_ver_orden(request.user, orden):
+        raise PermissionDenied
+
+    form = MensajeOrdenForm(request.POST)
+    if form.is_valid():
+        mensaje = form.save(commit=False)
+        mensaje.orden = orden
+        mensaje.autor = request.user
+        mensaje.save()
+        messages.success(request, 'Mensaje enviado al ticket.')
+    else:
+        messages.error(request, 'Escribe un mensaje antes de enviarlo.')
+    return redirect('orden_detalle', orden_id=orden.pk)
 
 
 @login_required

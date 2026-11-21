@@ -14,6 +14,7 @@ from diagnostico_ia.services import procesar_orden
 from .models import (
     EvidenciaSintoma,
     ItemPresupuestoRepuestos,
+    MensajeOrden,
     OrdenFalla,
     Taller,
     Vehiculo,
@@ -259,6 +260,48 @@ class TrackingTests(BaseWorkshopTest):
         response = self.client.get(reverse('seguimiento_publico', args=[orden.token_publico]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, orden.codigo_orden)
+
+
+class ChatTicketTests(BaseWorkshopTest):
+    def test_cliente_envia_mensaje_a_su_ticket(self):
+        orden = self.crear_orden(cliente=self.cliente)
+        self.client.force_login(self.cliente)
+
+        response = self.client.post(
+            reverse('enviar_mensaje_orden', args=[orden.pk]),
+            {'contenido': 'Necesito una actualización del diagnóstico.'},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        mensaje = MensajeOrden.objects.get(orden=orden)
+        self.assertEqual(mensaje.autor, self.cliente)
+        self.assertIn('actualización', mensaje.contenido)
+
+    def test_cliente_no_envia_mensaje_en_ticket_ajeno(self):
+        orden = self.crear_orden(cliente=self.otro_cliente)
+        self.client.force_login(self.cliente)
+
+        response = self.client.post(
+            reverse('enviar_mensaje_orden', args=[orden.pk]),
+            {'contenido': 'Mensaje no autorizado'},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(MensajeOrden.objects.filter(orden=orden).exists())
+
+    def test_refresco_muestra_mensajes_del_ticket(self):
+        orden = self.crear_orden(cliente=self.cliente)
+        MensajeOrden.objects.create(
+            orden=orden,
+            autor=self.asesor,
+            contenido='El vehículo ya está en revisión.',
+        )
+        self.client.force_login(self.cliente)
+
+        response = self.client.get(reverse('mensajes_orden', args=[orden.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'El vehículo ya está en revisión.')
 
     def test_token_expirado_devuelve_404(self):
         orden = self.crear_orden(cliente=self.cliente)

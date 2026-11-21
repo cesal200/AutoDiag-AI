@@ -21,6 +21,8 @@ urlpatterns = [
         name='aprobar_item',
     ),
     path('orden/<int:orden_id>/evidencia/', views.agregar_evidencia, name='agregar_evidencia'),
+    path('orden/<int:orden_id>/mensajes/', views.mensajes_orden, name='mensajes_orden'),
+    path('orden/<int:orden_id>/mensajes/enviar/', views.enviar_mensaje_orden, name='enviar_mensaje_orden'),
     path('orden/<int:orden_id>/token/', views.regenerar_token, name='regenerar_token'),
     path('pdf/<int:orden_id>/', views.generar_pdf, name='generar_pdf'),
     path('pdf/<int:orden_id>/descargar/', views.descargar_pdf, name='descargar_pdf'),

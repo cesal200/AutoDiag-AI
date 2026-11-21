@@ -8,6 +8,7 @@ from accounts.permissions import es_cliente
 from .models import (
     EvidenciaSintoma,
     ItemPresupuestoRepuestos,
+    MensajeOrden,
     OrdenFalla,
     Taller,
     Vehiculo,
@@ -168,6 +169,19 @@ class EvidenciaSintomaForm(forms.ModelForm):
             'imagen': forms.ClearableFileInput(attrs={
                 'accept': 'image/*',
                 'capture': 'environment',
+            }),
+        }
+
+
+class MensajeOrdenForm(forms.ModelForm):
+    class Meta:
+        model = MensajeOrden
+        fields = ['contenido']
+        labels = {'contenido': 'Mensaje'}
+        widgets = {
+            'contenido': forms.Textarea(attrs={
+                'rows': 3,
+                'placeholder': 'Escribe un mensaje sobre este ticket...',
             }),
         }
 

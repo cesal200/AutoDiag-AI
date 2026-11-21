@@ -42,6 +42,7 @@
             <div class="actions">
                 <a class="btn primary" href="{% url 'generar_pdf' orden.pk %}">Ver reporte</a>
                 <a class="btn secondary" href="{% url 'descargar_pdf' orden.pk %}">Descargar PDF</a>
+                <a class="btn secondary" href="#chat-ticket">💬 Chat del cliente</a>
                 <a class="btn secondary" href="{% url 'orden_lista' %}">Volver</a>
             </div>
 
@@ -87,6 +88,10 @@
             {% endfor %}
         </div>
     </div>
+</div>
+
+<div id="chat-ticket" style="margin-top: 20px;">
+    {% include 'workshop/_chat.html' %}
 </div>
 
 {% if es_admin_operativo or es_cliente_dueno %}

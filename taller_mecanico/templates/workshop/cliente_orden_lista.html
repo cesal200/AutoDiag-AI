@@ -24,7 +24,7 @@
                 <td>{{ orden.vehiculo }}</td>
                 <td>{{ orden.placa|default:'-' }}</td>
                 <td><span class="status">{{ orden.get_estado_display }}</span></td>
-                <td><a href="{% url 'cliente_orden_detalle' orden.pk %}">Abrir chat</a></td>
+                <td><a href="{% url 'orden_detalle' orden.pk %}#chat-ticket">💬 Abrir chat</a></td>
             </tr>
             {% endfor %}
         </tbody>
