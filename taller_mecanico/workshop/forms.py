@@ -35,6 +35,18 @@ class VehiculoForm(forms.ModelForm):
 
 
 class OrdenFallaForm(forms.ModelForm):
+    narrativa_cliente = forms.CharField(
+        label='Describe el problema del vehículo',
+        required=False,
+        widget=forms.Textarea(attrs={
+            'rows': 4,
+            'placeholder': '¿Qué ocurre, cuándo sucede y qué sonidos, luces o vibraciones notas?',
+        }),
+        help_text=(
+            'Se guarda como evidencia de la orden, se muestra al técnico asignado '
+            'y se usa para generar el prediagnóstico.'
+        ),
+    )
     placa = forms.CharField(label='Placa', max_length=20, required=False)
     marca = forms.CharField(label='Marca', max_length=50, required=False)
     modelo = forms.CharField(label='Modelo', max_length=50, required=False)
@@ -66,6 +78,7 @@ class OrdenFallaForm(forms.ModelForm):
             'kilometraje_ingreso',
             'etiquetas',
             'nuevas_etiquetas',
+            'narrativa_cliente',
         ]
         widgets = {
             'kilometraje_ingreso': forms.NumberInput(attrs={'min': 0}),
@@ -103,6 +116,7 @@ class OrdenFallaForm(forms.ModelForm):
 
         if es_cliente(user):
             self.instance.cliente = user
+            self.fields['narrativa_cliente'].required = True
             for campo in ('cliente', 'nombre_cliente_walkin', 'telefono_cliente_walkin'):
                 self.fields.pop(campo, None)
 
@@ -136,6 +150,15 @@ class OrdenFallaForm(forms.ModelForm):
             )
         orden = super().save(commit=commit)
         return orden
+
+    def save_narrativa(self, orden):
+        narrativa = self.cleaned_data.get('narrativa_cliente', '').strip()
+        if not narrativa:
+            return None
+        return EvidenciaSintoma.objects.create(
+            orden=orden,
+            narrativa_cliente=narrativa,
+        )
 
 
 class EditarOrdenForm(forms.ModelForm):
@@ -282,6 +305,15 @@ class EvidenciaSintomaForm(forms.ModelForm):
     class Meta:
         model = EvidenciaSintoma
         fields = ['archivo_audio', 'imagen', 'narrativa_cliente', 'nivel_riesgo']
+        labels = {
+            'narrativa_cliente': 'Describe el problema del vehículo',
+        }
+        help_texts = {
+            'narrativa_cliente': (
+                'Este relato queda guardado en la orden, es visible para el técnico '
+                'asignado y se incluye en el prediagnóstico.'
+            ),
+        }
         widgets = {
             'narrativa_cliente': forms.Textarea(attrs={
                 'rows': 4,

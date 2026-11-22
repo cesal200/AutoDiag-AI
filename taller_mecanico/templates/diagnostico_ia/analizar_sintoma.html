@@ -31,11 +31,12 @@
         </div>
 
         <div class="card">
-            <h2>Ejecutar análisis</h2>
-            <p class="subtitle">El motor combina narrativa, audio, imágenes y datos del vehículo.</p>
+            <h2>Ejecutar prediagnóstico</h2>
+            <p class="subtitle">Motor configurado: {{ proveedor_diagnostico }}. La narrativa reportada se analiza con este motor; el resultado es orientativo y debe validarlo un técnico.</p>
+            <p class="help">Edita config/diagnostico_ia.yaml para elegir proveedor y modelo. Ollama requiere el servicio activo y el modelo descargado; Gemini requiere gemini.api_key. Reinicia Django después de cambiar el YAML.</p>
             <form method="post">
                 {% csrf_token %}
-                <button class="btn primary" type="submit">Analizar con IA</button>
+                <button class="btn primary" type="submit">Generar prediagnóstico</button>
             </form>
         </div>
     </div>

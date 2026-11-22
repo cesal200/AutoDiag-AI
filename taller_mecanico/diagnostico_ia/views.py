@@ -9,7 +9,7 @@ from accounts.permissions import puede_ver_orden
 from workshop.models import OrdenFalla
 
 from .models import AnalisisSintoma
-from .services import procesar_orden
+from .services import DiagnosticoIAError, procesar_orden, proveedor_diagnostico
 
 from taller_mecanico.permissions import staff_required
 
@@ -25,10 +25,14 @@ def analizar_sintoma(request, orden_id):
         raise PermissionDenied
 
     if request.method == 'POST':
-        resultado, analisis = procesar_orden(orden)
+        try:
+            _, analisis = procesar_orden(orden)
+        except DiagnosticoIAError as exc:
+            messages.error(request, str(exc))
+            return redirect('analizar_sintoma', orden_id=orden.pk)
         messages.success(
             request,
-            f'Análisis completado. Riesgo: {analisis.get_nivel_riesgo_display()}.',
+            f'Prediagnóstico completado. Riesgo: {analisis.get_nivel_riesgo_display()}.',
         )
         return redirect('resultado_analisis', analisis_id=analisis.pk)
 
@@ -36,7 +40,8 @@ def analizar_sintoma(request, orden_id):
         'title': 'Diagnóstico IA',
         'orden': orden,
         'evidencias': orden.evidencias.all(),
-        'analisis_previos': orden.analisis_ia.all()[:5],
+        'analisis_previos': orden.analisis_ia.order_by('-creado_en', '-pk')[:5],
+        'proveedor_diagnostico': proveedor_diagnostico(),
     })
 
 

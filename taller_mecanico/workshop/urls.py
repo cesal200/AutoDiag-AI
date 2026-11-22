@@ -22,6 +22,16 @@ urlpatterns = [
         name='aprobar_item',
     ),
     path('orden/<int:orden_id>/evidencia/', views.agregar_evidencia, name='agregar_evidencia'),
+    path(
+        'orden/<int:orden_id>/evidencia/<int:evidencia_id>/editar/',
+        views.editar_evidencia,
+        name='editar_evidencia',
+    ),
+    path(
+        'orden/<int:orden_id>/evidencia/<int:evidencia_id>/eliminar/',
+        views.eliminar_evidencia,
+        name='eliminar_evidencia',
+    ),
     path('orden/<int:orden_id>/mensajes/', views.mensajes_orden, name='mensajes_orden'),
     path('orden/<int:orden_id>/mensajes/enviar/', views.enviar_mensaje_orden, name='enviar_mensaje_orden'),
     path('orden/<int:orden_id>/token/', views.regenerar_token, name='regenerar_token'),

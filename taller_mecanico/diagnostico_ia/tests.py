@@ -1,6 +1,9 @@
 import io
+import json
 import shutil
 import tempfile
+from unittest.mock import patch
+from urllib.error import HTTPError
 
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -13,6 +16,7 @@ from workshop.models import EvidenciaSintoma, OrdenFalla, Taller, Vehiculo
 
 from .models import AnalisisSintoma
 from .services import (
+    DiagnosticoIAError,
     analizar_imagen,
     clasificar_riesgo,
     normalizar_sintomas,
@@ -51,6 +55,7 @@ class BaseDiagnosticoTest(TestCase):
         )
 
 
+@override_settings(DIAGNOSTICO_IA_PROVIDER='local')
 class PipelineTests(BaseDiagnosticoTest):
     def test_normalizacion_detecta_componentes(self):
         sintomas = normalizar_sintomas('El motor vibra y el freno hace ruido')
@@ -120,7 +125,85 @@ class PipelineTests(BaseDiagnosticoTest):
         self.assertGreater(resultado['confianza'], 0)
 
 
+@override_settings(DIAGNOSTICO_IA_PROVIDER='local')
 class DiagnosticoViewsTests(BaseDiagnosticoTest):
+    def test_cliente_crea_orden_y_narrativa_queda_guardada_como_evidencia(self):
+        vehiculo = Vehiculo.objects.create(
+            placa='IA-002',
+            marca='Honda',
+            modelo='Civic',
+            anio=2022,
+            cliente=self.cliente,
+        )
+        self.client.force_login(self.cliente)
+        narrativa = 'El pedal del freno se siente esponjoso y tiene fuga de líquido.'
+
+        response = self.client.post(reverse('orden_nueva'), {
+            'vehiculo': vehiculo.pk,
+            'taller': self.taller.pk,
+            'kilometraje_ingreso': 85000,
+            'narrativa_cliente': narrativa,
+        })
+
+        self.assertEqual(response.status_code, 302)
+        orden = OrdenFalla.objects.get(cliente=self.cliente, vehiculo=vehiculo)
+        self.assertTrue(response['Location'].endswith('#evidencias'))
+        evidencia = orden.evidencias.get()
+        self.assertEqual(evidencia.narrativa_cliente, narrativa)
+        analisis = orden.analisis_ia.get()
+        self.assertEqual(analisis.nivel_riesgo, 'NO_MOVER_GRUA')
+
+    def test_cliente_agrega_evidencia_y_se_muestra_el_analisis_mas_reciente(self):
+        self.crear_evidencia('El motor vibra al acelerar.')
+        _, analisis_anterior = procesar_orden(self.orden)
+        self.client.force_login(self.cliente)
+        narrativa = 'El pedal del freno se siente esponjoso y tiene fuga de líquido.'
+
+        response = self.client.post(
+            reverse('agregar_evidencia', args=[self.orden.pk]),
+            {
+                'narrativa_cliente': narrativa,
+                'nivel_riesgo': 'PRECAUCION',
+            },
+        )
+
+        detalle_url = reverse('orden_detalle', args=[self.orden.pk])
+        self.assertRedirects(
+            response,
+            f'{detalle_url}#evidencias',
+            fetch_redirect_response=False,
+        )
+        evidencia = self.orden.evidencias.order_by('-pk').first()
+        self.assertEqual(evidencia.narrativa_cliente, narrativa)
+        analisis_reciente = self.orden.analisis_ia.order_by('-creado_en', '-pk').first()
+        self.assertGreater(analisis_reciente.pk, analisis_anterior.pk)
+        self.assertEqual(analisis_reciente.nivel_riesgo, 'NO_MOVER_GRUA')
+
+        respuesta_detalle = self.client.get(detalle_url)
+        self.assertEqual(
+            respuesta_detalle.context['ultimo_analisis'].pk,
+            analisis_reciente.pk,
+        )
+        contenido = respuesta_detalle.content.decode()
+        self.assertIn(narrativa, contenido)
+        self.assertLess(
+            contenido.index('data-section="resumen"'),
+            contenido.index('data-section="evidencias"'),
+        )
+        self.assertLess(
+            contenido.index('data-section="evidencias"'),
+            contenido.index('data-section="diagnostico"'),
+        )
+
+        tecnico = User.objects.create_user('tecnico_evidencia')
+        tecnico.perfil.rol = PerfilUsuario.Rol.MECANICO
+        tecnico.perfil.save(update_fields=['rol'])
+        self.orden.mecanico_asignado = tecnico
+        self.orden.save(update_fields=['mecanico_asignado'])
+        self.client.force_login(tecnico)
+        respuesta_tecnico = self.client.get(detalle_url)
+        self.assertContains(respuesta_tecnico, narrativa)
+
     def test_analizar_endpoint_crea_analisis(self):
         self.crear_evidencia('El vehículo pierde potencia y tiene testigo de motor.')
         self.client.force_login(self.cliente)
@@ -150,3 +233,225 @@ class DiagnosticoViewsTests(BaseDiagnosticoTest):
         self.client.force_login(otro)
         response = self.client.get(reverse('resultado_analisis', args=[analisis.pk]))
         self.assertEqual(response.status_code, 403)
+
+
+class ModelProviderTests(BaseDiagnosticoTest):
+    RESPUESTA_MODELO = {
+        'sintomas_normalizados': [{
+            'codigo': 'FRENO-01',
+            'componente': 'Sistema de frenos',
+            'sintoma': 'Pedal esponjoso',
+            'gravedad': 'PRECAUCION',
+        }],
+        'causas_probables': [
+            {'causa': 'Aire en el sistema hidráulico', 'probabilidad': 60, 'ranking': 1},
+            {'causa': 'Fuga de líquido', 'probabilidad': 30, 'ranking': 2},
+            {'causa': 'Desgaste de componentes', 'probabilidad': 10, 'ranking': 3},
+        ],
+        'nivel_riesgo': 'PRECAUCION',
+        'pruebas_taller_sugeridas': [{
+            'prueba': 'Inspeccionar frenos',
+            'procedimiento': 'Revisar el circuito hidráulico y sus componentes.',
+            'valor_esperado': 'Sin fugas y pedal firme.',
+        }],
+    }
+
+    def crear_entrada(self):
+        return EvidenciaSintoma.objects.create(
+            orden=self.orden,
+            narrativa_cliente='El pedal del freno se siente esponjoso.',
+        )
+
+    @override_settings(
+        DIAGNOSTICO_IA_PROVIDER='ollama',
+        OLLAMA_BASE_URL='http://localhost:11434',
+        OLLAMA_MODEL='modelo-prueba',
+        OLLAMA_MODELS=['modelo-prueba'],
+        OLLAMA_CLOUD_ENABLED=True,
+        OLLAMA_LOCAL_ENABLED=False,
+        OLLAMA_LOCAL_MODELS=[],
+        OLLAMA_API_KEY='',
+    )
+    @patch('diagnostico_ia.services._post_json')
+    def test_procesa_narrativa_con_modelo_ollama(self, post_json):
+        self.crear_entrada()
+        post_json.return_value = {
+            'message': {'content': json.dumps(self.RESPUESTA_MODELO)},
+        }
+
+        resultado, analisis = procesar_orden(self.orden)
+
+        args, kwargs = post_json.call_args
+        self.assertEqual(args[0], 'http://localhost:11434/api/chat')
+        self.assertEqual(args[1]['model'], 'modelo-prueba')
+        self.assertFalse(args[1]['stream'])
+        self.assertIn('pedal del freno', args[1]['messages'][1]['content'])
+        self.assertIsNone(kwargs['headers'])
+        self.assertEqual(kwargs['timeout'], 90)
+        self.assertEqual(analisis.sintomas_normalizados, resultado['sintomas_normalizados'])
+
+    @override_settings(
+        DIAGNOSTICO_IA_PROVIDER='ollama',
+        OLLAMA_BASE_URL='https://ollama.com',
+        OLLAMA_MODEL='deepseek-v4.1-flash:cloud',
+        OLLAMA_MODELS=['deepseek-v4.1-flash:cloud'],
+        OLLAMA_CLOUD_ENABLED=True,
+        OLLAMA_LOCAL_ENABLED=False,
+        OLLAMA_LOCAL_MODELS=[],
+        OLLAMA_API_KEY='test-ollama-key',
+    )
+    @patch('diagnostico_ia.services._post_json')
+    def test_ollama_cloud_envia_bearer_token(self, post_json):
+        self.crear_entrada()
+        post_json.return_value = {
+            'message': {'content': json.dumps(self.RESPUESTA_MODELO)},
+        }
+
+        procesar_orden(self.orden)
+
+        args, kwargs = post_json.call_args
+        self.assertEqual(args[0], 'https://ollama.com/api/chat')
+        self.assertEqual(args[1]['model'], 'deepseek-v4.1-flash:cloud')
+        self.assertEqual(
+            kwargs['headers'],
+            {'Authorization': 'Bearer test-ollama-key'},
+        )
+
+    @override_settings(
+        DIAGNOSTICO_IA_PROVIDER='ollama',
+        OLLAMA_CLOUD_ENABLED=False,
+        OLLAMA_LOCAL_ENABLED=True,
+        OLLAMA_MODELS=[],
+        OLLAMA_LOCAL_MODELS=['qwen2.5:1.5b'],
+        OLLAMA_LOCAL_BASE_URL='http://localhost:11434',
+        OLLAMA_API_KEY='test-ollama-key',
+    )
+    @patch('diagnostico_ia.services._post_json')
+    def test_cloud_desactivado_consulta_solo_modelo_local(self, post_json):
+        self.crear_entrada()
+        post_json.return_value = {
+            'message': {'content': json.dumps(self.RESPUESTA_MODELO)},
+        }
+
+        procesar_orden(self.orden)
+
+        args, kwargs = post_json.call_args
+        self.assertEqual(args[0], 'http://localhost:11434/api/chat')
+        self.assertEqual(args[1]['model'], 'qwen2.5:1.5b')
+        self.assertIsNone(kwargs['headers'])
+
+    @override_settings(
+        DIAGNOSTICO_IA_PROVIDER='ollama',
+        OLLAMA_BASE_URL='https://ollama.com',
+        OLLAMA_MODEL='modelo-cloud',
+        OLLAMA_MODELS=['modelo-cloud', 'modelo-cloud-respaldo'],
+        OLLAMA_CLOUD_ENABLED=True,
+        OLLAMA_LOCAL_ENABLED=True,
+        OLLAMA_LOCAL_MODELS=['modelo-local', 'modelo-local-respaldo'],
+        OLLAMA_LOCAL_BASE_URL='http://localhost:11434',
+        OLLAMA_API_KEY='test-ollama-key',
+    )
+    @patch('diagnostico_ia.services._post_json')
+    def test_ollama_pasa_de_cloud_a_local_si_cloud_falla(
+        self,
+        post_json,
+    ):
+        self.crear_entrada()
+        post_json.side_effect = [
+            HTTPError('https://ollama.com/api/chat', 401, 'Unauthorized', None, None),
+            {'message': {'content': json.dumps(self.RESPUESTA_MODELO)}},
+        ]
+
+        procesar_orden(self.orden)
+
+        llamadas = post_json.call_args_list
+        self.assertEqual(
+            [llamada.args[0] for llamada in llamadas],
+            [
+                'https://ollama.com/api/chat',
+                'http://localhost:11434/api/chat',
+            ],
+        )
+        self.assertEqual(
+            [llamada.args[1]['model'] for llamada in llamadas],
+            ['modelo-cloud', 'modelo-local'],
+        )
+        self.assertEqual(len(llamadas), 2)
+        self.assertEqual(
+            llamadas[0].kwargs['headers'],
+            {'Authorization': 'Bearer test-ollama-key'},
+        )
+        self.assertIsNone(llamadas[1].kwargs['headers'])
+
+    @override_settings(
+        DIAGNOSTICO_IA_PROVIDER='ollama',
+        OLLAMA_BASE_URL='https://ollama.com',
+        OLLAMA_MODEL='modelo-principal',
+        OLLAMA_MODELS=['modelo-principal', 'modelo-respaldo'],
+        OLLAMA_CLOUD_ENABLED=True,
+        OLLAMA_LOCAL_ENABLED=False,
+        OLLAMA_LOCAL_MODELS=[],
+        OLLAMA_API_KEY='test-ollama-key',
+    )
+    @patch(
+        'diagnostico_ia.services._post_json',
+        side_effect=OSError('sin conexión'),
+    )
+    def test_ollama_informa_si_fallan_todos_los_modelos(self, post_json):
+        self.crear_entrada()
+
+        with self.assertRaisesRegex(
+            DiagnosticoIAError,
+            'Ningún modelo de Ollama produjo un análisis válido.*modelo-principal.*modelo-respaldo',
+        ):
+            procesar_orden(self.orden)
+
+        self.assertFalse(AnalisisSintoma.objects.filter(orden=self.orden).exists())
+        self.assertEqual(post_json.call_count, 2)
+
+    @override_settings(
+        DIAGNOSTICO_IA_PROVIDER='gemini',
+        GEMINI_API_KEY='fake-test-key',
+        GEMINI_MODEL='gemini-test',
+    )
+    @patch('diagnostico_ia.services._post_json')
+    def test_procesa_narrativa_con_gemini_api(self, post_json):
+        self.crear_entrada()
+        post_json.return_value = {
+            'candidates': [{
+                'content': {'parts': [{'text': json.dumps(self.RESPUESTA_MODELO)}]},
+            }],
+        }
+
+        resultado, _ = procesar_orden(self.orden)
+
+        args, kwargs = post_json.call_args
+        self.assertEqual(
+            args[0],
+            'https://generativelanguage.googleapis.com/v1beta/models/'
+            'gemini-test:generateContent',
+        )
+        self.assertEqual(kwargs['headers']['x-goog-api-key'], 'fake-test-key')
+        self.assertEqual(
+            args[1]['generationConfig']['responseMimeType'],
+            'application/json',
+        )
+        self.assertEqual(resultado['causas_probables'][0]['probabilidad'], 60)
+
+    @override_settings(
+        DIAGNOSTICO_IA_PROVIDER='ollama',
+        OLLAMA_MODEL='modelo-prueba',
+        OLLAMA_MODELS=['modelo-prueba'],
+        OLLAMA_CLOUD_ENABLED=True,
+        OLLAMA_LOCAL_ENABLED=False,
+        OLLAMA_LOCAL_MODELS=[],
+        OLLAMA_API_KEY='',
+    )
+    @patch('diagnostico_ia.services._post_json', return_value={'message': {'content': 'not json'}})
+    def test_respuesta_invalida_del_modelo_no_se_guarda_como_analisis(self, post_json):
+        self.crear_entrada()
+
+        with self.assertRaisesRegex(DiagnosticoIAError, 'JSON válido'):
+            procesar_orden(self.orden)
+
+        self.assertFalse(AnalisisSintoma.objects.filter(orden=self.orden).exists())

@@ -13,6 +13,9 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 import os
 from pathlib import Path
 
+import yaml
+from django.core.exceptions import ImproperlyConfigured
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -41,6 +44,140 @@ ALLOWED_HOSTS = [
     for host in os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',')
     if host.strip()
 ]
+
+# Diagnostic model settings. The local YAML file is ignored by git because it may
+# contain API keys; the tracked example supplies safe defaults when it is absent.
+DIAGNOSTICO_IA_CONFIG_FILE = BASE_DIR / 'config' / 'diagnostico_ia.yaml'
+if not DIAGNOSTICO_IA_CONFIG_FILE.exists():
+    DIAGNOSTICO_IA_CONFIG_FILE = (
+        BASE_DIR / 'config' / 'diagnostico_ia.example.yaml'
+    )
+
+try:
+    with DIAGNOSTICO_IA_CONFIG_FILE.open(encoding='utf-8') as archivo_config:
+        _diagnostico_config = yaml.safe_load(archivo_config)
+except (OSError, yaml.YAMLError) as exc:
+    raise ImproperlyConfigured(
+        f'No se pudo leer la configuración IA en {DIAGNOSTICO_IA_CONFIG_FILE}: {exc}'
+    ) from exc
+
+if not isinstance(_diagnostico_config, dict):
+    raise ImproperlyConfigured(
+        f'La configuración IA de {DIAGNOSTICO_IA_CONFIG_FILE} debe ser un mapa YAML.'
+    )
+
+
+def _seccion_config_ia(nombre):
+    seccion = _diagnostico_config.get(nombre, {})
+    if not isinstance(seccion, dict):
+        raise ImproperlyConfigured(
+            f'La sección "{nombre}" debe ser un mapa YAML.'
+        )
+    return seccion
+
+
+def _valor_config_ia(seccion, nombre, valor_predeterminado=''):
+    valor = seccion.get(nombre, valor_predeterminado)
+    if not isinstance(valor, str):
+        raise ImproperlyConfigured(
+            f'El valor "{nombre}" de la configuración IA debe ser texto.'
+        )
+    return valor.strip()
+
+
+def _booleano_config_ia(seccion, nombre, valor_predeterminado):
+    valor = seccion.get(nombre, valor_predeterminado)
+    if not isinstance(valor, bool):
+        raise ImproperlyConfigured(
+            f'El valor "{nombre}" de la configuración IA debe ser true o false.'
+        )
+    return valor
+
+
+def _lista_config_ia(
+    seccion,
+    nombre,
+    valor_predeterminado,
+    permitir_vacia=False,
+):
+    predeterminado = [valor_predeterminado] if valor_predeterminado else []
+    valores = seccion.get(nombre, predeterminado)
+    if valores is None and permitir_vacia:
+        return []
+    if isinstance(valores, str):
+        valores = [valores]
+    if not isinstance(valores, list):
+        raise ImproperlyConfigured(
+            f'El valor "{nombre}" de la configuración IA debe ser una lista.'
+        )
+    if not valores and not permitir_vacia:
+        raise ImproperlyConfigured(
+            f'El valor "{nombre}" de la configuración IA no puede estar vacío.'
+        )
+    if any(not isinstance(valor, str) or not valor.strip() for valor in valores):
+        raise ImproperlyConfigured(
+            f'Cada elemento de "{nombre}" debe ser texto no vacío.'
+        )
+    return [valor.strip() for valor in valores]
+
+
+DIAGNOSTICO_IA_PROVIDER = _valor_config_ia(
+    _diagnostico_config,
+    'provider',
+    'ollama',
+).lower()
+_ollama_config = _seccion_config_ia('ollama')
+_gemini_config = _seccion_config_ia('gemini')
+_openai_config = _seccion_config_ia('openai')
+OLLAMA_BASE_URL = _valor_config_ia(
+    _ollama_config,
+    'base_url',
+    'http://127.0.0.1:11434',
+).rstrip('/')
+OLLAMA_LOCAL_BASE_URL = _valor_config_ia(
+    _ollama_config,
+    'local_base_url',
+    'http://127.0.0.1:11434',
+).rstrip('/')
+OLLAMA_CLOUD_ENABLED = _booleano_config_ia(
+    _ollama_config,
+    'cloud_enabled',
+    True,
+)
+OLLAMA_LOCAL_ENABLED = _booleano_config_ia(
+    _ollama_config,
+    'local_enabled',
+    bool(_ollama_config.get('local_models')),
+)
+OLLAMA_MODELS = _lista_config_ia(
+    _ollama_config,
+    'models',
+    _valor_config_ia(_ollama_config, 'model', 'llama3.2'),
+    permitir_vacia=not OLLAMA_CLOUD_ENABLED,
+)
+OLLAMA_LOCAL_MODELS = _lista_config_ia(
+    _ollama_config,
+    'local_models',
+    '',
+    permitir_vacia=not OLLAMA_LOCAL_ENABLED,
+)
+if OLLAMA_CLOUD_ENABLED and not OLLAMA_MODELS:
+    raise ImproperlyConfigured(
+        'Ollama Cloud está habilitado, pero no hay modelos configurados.'
+    )
+if OLLAMA_LOCAL_ENABLED and not OLLAMA_LOCAL_MODELS:
+    raise ImproperlyConfigured(
+        'Ollama local está habilitado, pero no hay modelos configurados.'
+    )
+if not OLLAMA_CLOUD_ENABLED and not OLLAMA_LOCAL_ENABLED:
+    raise ImproperlyConfigured(
+        'Habilita Ollama Cloud, Ollama local o ambos.'
+    )
+OLLAMA_MODEL = OLLAMA_MODELS[0] if OLLAMA_MODELS else ''
+OLLAMA_API_KEY = _valor_config_ia(_ollama_config, 'api_key')
+GEMINI_API_KEY = _valor_config_ia(_gemini_config, 'api_key')
+GEMINI_MODEL = _valor_config_ia(_gemini_config, 'model', 'gemini-2.5-flash')
+OPENAI_API_KEY = _valor_config_ia(_openai_config, 'api_key')
 
 
 # Application definition

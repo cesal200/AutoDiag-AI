@@ -10,7 +10,7 @@ def construir_pdf(orden):
     """Renderiza el informe HTML y devuelve los bytes del PDF."""
     from xhtml2pdf import pisa
 
-    analisis = orden.analisis_ia.first()
+    analisis = orden.analisis_ia.order_by('-creado_en', '-pk').first()
     contexto = {
         'orden': orden,
         'analisis': analisis,

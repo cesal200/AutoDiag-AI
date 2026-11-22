@@ -1,3 +1,4 @@
+import logging
 from decimal import Decimal
 
 from django.contrib import messages
@@ -8,7 +9,7 @@ from django.db.models import Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods, require_POST
 
 from accounts.decorators import rol_requerido
 from accounts.models import PerfilUsuario
@@ -20,7 +21,7 @@ from accounts.permissions import (
     puede_ver_orden,
     rol_de,
 )
-from diagnostico_ia.services import procesar_orden
+from diagnostico_ia.services import procesar_orden, proveedor_diagnostico
 
 from .forms import (
     AsignarMecanicoForm,
@@ -35,6 +36,38 @@ from .forms import (
 )
 from .models import ESTADO_CHOICES, Etiqueta, OrdenFalla, Vehiculo
 from .pdf import construir_pdf
+
+logger = logging.getLogger(__name__)
+
+
+def _actualizar_prediagnostico(
+    request,
+    orden,
+    mensaje_exito,
+    mensaje_guardado=None,
+):
+    try:
+        procesar_orden(orden)
+    except Exception as exc:
+        logger.exception('Falló el prediagnóstico de la orden %s', orden.pk)
+        messages.success(
+            request,
+            mensaje_guardado or 'Los cambios quedaron guardados en la orden.',
+        )
+        messages.warning(request, f'No se pudo completar el prediagnóstico: {exc}')
+    else:
+        messages.success(request, mensaje_exito)
+
+
+def _puede_gestionar_evidencias(user, orden):
+    es_tecnico_asignado = (
+        es_tecnico(user) and orden.mecanico_asignado_id == user.id
+    )
+    return (
+        es_admin_operativo(user)
+        or es_tecnico_asignado
+        or orden.cliente_id == user.id
+    )
 
 
 @login_required
@@ -123,11 +156,21 @@ def orden_nueva(request):
                     orden.cliente = request.user
                 orden.save()
                 form.save_m2m()
-                messages.success(
-                    request,
-                    'Orden creada. Comparte el enlace de seguimiento con el cliente.',
+                evidencia = form.save_narrativa(orden)
+                if evidencia:
+                    _actualizar_prediagnostico(
+                        request,
+                        orden,
+                        'Orden creada; síntoma guardado y prediagnóstico generado.',
+                    )
+                else:
+                    messages.success(
+                        request,
+                        'Orden creada. Comparte el enlace de seguimiento con el cliente.',
+                    )
+                return redirect(
+                    f"{reverse('orden_detalle', args=[orden.pk])}#evidencias"
                 )
-                return redirect('orden_detalle', orden_id=orden.pk)
     else:
         initial = {}
         cliente_id = request.GET.get('cliente')
@@ -186,7 +229,7 @@ def orden_detalle(request, orden_id):
     cliente_dueno = orden.cliente_id == request.user.id
     puede_cambiar_estado = puede_editar_estado(request.user, orden)
     puede_operar = admin_operativo or tecnico_asignado
-    puede_evidenciar = puede_operar or cliente_dueno
+    puede_evidenciar = _puede_gestionar_evidencias(request.user, orden)
     config_distribucion = getattr(orden, 'config_distribucion', None)
     codigos_estado = [codigo for codigo, _ in ESTADO_CHOICES]
     indice_actual = codigos_estado.index(orden.estado)
@@ -203,6 +246,7 @@ def orden_detalle(request, orden_id):
         'puede_cambiar_estado': puede_cambiar_estado,
         'puede_operar': puede_operar,
         'puede_evidenciar': puede_evidenciar,
+        'puede_gestionar_evidencias': puede_evidenciar,
         'form_estado': CambioEstadoForm(orden=orden) if puede_cambiar_estado else None,
         'form_mecanico': AsignarMecanicoForm(instance=orden) if admin_operativo else None,
         'form_item': ItemPresupuestoForm() if puede_operar else None,
@@ -211,7 +255,8 @@ def orden_detalle(request, orden_id):
         'mensajes': orden.mensajes.select_related('autor').all(),
         'mensajes_no_leidos': mensajes_no_leidos,
         'usuario_id': request.user.id,
-        'ultimo_analisis': orden.analisis_ia.first(),
+        'ultimo_analisis': orden.analisis_ia.order_by('-creado_en', '-pk').first(),
+        'proveedor_diagnostico': proveedor_diagnostico(),
         'config_distribucion': config_distribucion,
         'workflow': [
             {
@@ -384,27 +429,72 @@ def aprobar_item(request, orden_id, item_id):
 @require_POST
 def agregar_evidencia(request, orden_id):
     orden = get_object_or_404(OrdenFalla, pk=orden_id)
-    es_tecnico_asignado = es_tecnico(request.user) and orden.mecanico_asignado_id == request.user.id
-    cliente_dueno = orden.cliente_id == request.user.id
-    if not (es_admin_operativo(request.user) or es_tecnico_asignado or cliente_dueno):
+    if not _puede_gestionar_evidencias(request.user, orden):
         raise PermissionDenied
 
     form = EvidenciaSintomaForm(request.POST, request.FILES)
     if form.is_valid():
         evidencia = form.save(commit=False)
         evidencia.orden = orden
-        if cliente_dueno and not evidencia.nivel_riesgo:
+        if orden.cliente_id == request.user.id and not evidencia.nivel_riesgo:
             evidencia.nivel_riesgo = 'PRECAUCION'
         evidencia.save()
-        try:
-            procesar_orden(orden)
-            messages.success(request, 'Evidencia registrada y analizada por IA.')
-        except Exception:
-            messages.success(request, 'Evidencia registrada.')
-            messages.warning(request, 'El análisis IA no pudo completarse; puedes reintentarlo.')
+        _actualizar_prediagnostico(
+            request,
+            orden,
+            'Evidencia guardada y prediagnóstico actualizado.',
+        )
     else:
         messages.error(request, 'Revisa los datos de la evidencia.')
-    return redirect('orden_detalle', orden_id=orden.pk)
+    return redirect(f"{reverse('orden_detalle', args=[orden.pk])}#evidencias")
+
+
+@login_required
+@require_http_methods(['GET', 'POST'])
+def editar_evidencia(request, orden_id, evidencia_id):
+    orden = get_object_or_404(OrdenFalla, pk=orden_id)
+    if not _puede_gestionar_evidencias(request.user, orden):
+        raise PermissionDenied
+    evidencia = get_object_or_404(orden.evidencias, pk=evidencia_id)
+
+    form = EvidenciaSintomaForm(
+        request.POST or None,
+        request.FILES or None,
+        instance=evidencia,
+    )
+    if request.method == 'POST':
+        if form.is_valid():
+            form.save()
+            messages.success(
+                request,
+                'Evidencia actualizada. Usa “Analizar síntomas” para refrescar el prediagnóstico.',
+            )
+            return redirect(
+                f"{reverse('orden_detalle', args=[orden.pk])}#evidencias"
+            )
+        messages.error(request, 'Revisa los datos de la evidencia.')
+
+    return render(request, 'workshop/editar_evidencia.html', {
+        'title': f'Editar evidencia de {orden.codigo_orden}',
+        'orden': orden,
+        'evidencia': evidencia,
+        'form': form,
+    })
+
+
+@login_required
+@require_POST
+def eliminar_evidencia(request, orden_id, evidencia_id):
+    orden = get_object_or_404(OrdenFalla, pk=orden_id)
+    if not _puede_gestionar_evidencias(request.user, orden):
+        raise PermissionDenied
+    evidencia = get_object_or_404(orden.evidencias, pk=evidencia_id)
+    evidencia.delete()
+    messages.success(
+        request,
+        'Evidencia eliminada. Usa “Analizar síntomas” para refrescar el prediagnóstico.',
+    )
+    return redirect(f"{reverse('orden_detalle', args=[orden.pk])}#evidencias")
 
 
 @rol_requerido(PerfilUsuario.Rol.ADMIN, PerfilUsuario.Rol.ASESOR)
@@ -444,7 +534,7 @@ def generar_pdf(request, orden_id):
     return render(request, 'workshop/generar_pdf.html', {
         'title': f'Reporte {orden.codigo_orden}',
         'orden': orden,
-        'analisis': orden.analisis_ia.first(),
+        'analisis': orden.analisis_ia.order_by('-creado_en', '-pk').first(),
         'total_presupuesto': orden.total_presupuesto,
     })
 

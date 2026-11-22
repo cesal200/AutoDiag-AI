@@ -18,14 +18,14 @@
 <div class="order-layout" style="margin-top: 20px;">
     <aside class="panel order-sidebar" aria-label="Secciones de la orden">
         <button class="order-tab active" type="button" data-section="resumen">Resumen</button>
+        <button class="order-tab" type="button" data-section="evidencias">Problema y evidencias</button>
+        <button class="order-tab" type="button" data-section="diagnostico">Diagnóstico IA</button>
         <button class="order-tab" type="button" data-section="chat">
             Chat del cliente
             {% if mensajes_no_leidos %}<span class="unread-badge">{{ mensajes_no_leidos }}</span>{% endif %}
         </button>
         <button class="order-tab" type="button" data-section="seguimiento">Seguimiento</button>
         <button class="order-tab" type="button" data-section="presupuesto">Presupuesto</button>
-        <button class="order-tab" type="button" data-section="diagnostico">Diagnóstico IA</button>
-        <button class="order-tab" type="button" data-section="evidencias">Evidencias</button>
         <button class="order-tab" type="button" data-section="distribucion">Distribución</button>
     </aside>
 
@@ -188,9 +188,10 @@
             </div>
         </section>
 
-        <section class="order-section" data-order-section="diagnostico" hidden>
+        <section class="order-section" data-order-section="diagnostico" id="diagnostico" hidden>
             <div class="panel">
-                <h2>Diagnóstico IA</h2>
+                <h2>Prediagnóstico IA</h2>
+                <p class="subtitle">Motor configurado: {{ proveedor_diagnostico }}. La narrativa se envía al motor seleccionado y se guarda con este análisis.</p>
                 {% if ultimo_analisis %}
                     <div class="result">
                         <p><strong>Riesgo:</strong>
@@ -213,17 +214,28 @@
             </div>
         </section>
 
-        <section class="order-section" data-order-section="evidencias" hidden>
+        <section class="order-section" id="evidencias" data-order-section="evidencias" hidden>
             <div class="panel">
-                <h2>Evidencias del síntoma</h2>
+                <h2>Problema reportado y evidencias</h2>
+                <p class="subtitle">Aquí el cliente describe lo que ocurre y adjunta evidencia para que la revise el técnico y se use en el prediagnóstico.</p>
                 {% if orden.evidencias.all %}
                     <ul>
                         {% for evidencia in orden.evidencias.all %}
                             <li>
+                                <small>{{ evidencia.creado_en|date:"d/m/Y H:i" }}</small><br>
                                 <strong>{{ evidencia.get_nivel_riesgo_display }}</strong>
                                 {% if evidencia.narrativa_cliente %}<br>{{ evidencia.narrativa_cliente }}{% endif %}
                                 {% if evidencia.archivo_audio %}<br><a href="{{ evidencia.archivo_audio.url }}" target="_blank" rel="noopener">Audio</a>{% endif %}
                                 {% if evidencia.imagen %}<br><a href="{{ evidencia.imagen.url }}" target="_blank" rel="noopener">Imagen</a>{% endif %}
+                                {% if puede_gestionar_evidencias %}
+                                    <div class="button-row">
+                                        <a class="btn secondary" href="{% url 'editar_evidencia' orden.pk evidencia.pk %}">Editar</a>
+                                        <form method="post" action="{% url 'eliminar_evidencia' orden.pk evidencia.pk %}" onsubmit="return confirm('¿Eliminar esta evidencia? Esta acción no se puede deshacer.');">
+                                            {% csrf_token %}
+                                            <button class="btn secondary" type="submit">Eliminar</button>
+                                        </form>
+                                    </div>
+                                {% endif %}
                             </li>
                         {% endfor %}
                     </ul>
@@ -232,7 +244,7 @@
                 {% endif %}
 
                 {% if form_evidencia %}
-                    <h3 style="margin-top: 20px;">Agregar evidencia</h3>
+                    <h3 style="margin-top: 20px;">Describir el problema o agregar evidencia</h3>
                     <form method="post" action="{% url 'agregar_evidencia' orden.pk %}" enctype="multipart/form-data">
                         {% csrf_token %}
                         {% for field in form_evidencia %}
@@ -306,7 +318,11 @@
             });
         });
 
-        if (window.location.hash === '#chat') activate('chat');
+        const hashSection = window.location.hash.substring(1);
+        if (hashSection === 'chat' || hashSection === 'evidencias' || hashSection === 'diagnostico') {
+            activate(hashSection);
+            document.getElementById(hashSection).scrollIntoView({ block: 'start' });
+        }
     })();
 </script>
 {% endblock %}
